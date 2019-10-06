@@ -1,6 +1,7 @@
 import numpy as np
 from collections import OrderedDict
 
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -39,20 +40,23 @@ class Model(nn.Module):
         return number_params
 
     def forward(self, x, lambda_value=None):
-        for _, block in enumerate(self._features_extractor):
+        features_calculated = {}
+        for i, block in enumerate(self._features_extractor):
             for _, layer in enumerate(block):
                 x = layer(x)
+                if isinstance(layer, nn.Conv2d):
+                    features_calculated['layer_' + str(i)] = torch.mean(x, dim=(2, 3))
         # Perform the average pooling channel wise (i.e. for each channel of the armband), take the average output of
         # the features
         features_extracted = F.adaptive_avg_pool2d(x, (self._number_of_channel_input, 1)).view(
             -1, self._number_of_channel_input * self._number_of_features_output)
         output = self._output(features_extracted)
         if lambda_value is None:
-            return output, features_extracted
+            return output, features_calculated
         else:
             reversed_layer = ReversalGradientLayerF.grad_reverse(features_extracted, lambda_value)
             output_domain = self._output_domain(reversed_layer)
-            return output, output_domain, features_extracted
+            return output, output_domain, features_calculated
 
     def generate_bloc(self, block_id, number_features_input=64, number_of_features_output=64, filter_size=(1, 25),
                       dropout_rate=0.5):
@@ -65,3 +69,4 @@ class Model(nn.Module):
         ]))
 
         return block
+

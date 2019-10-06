@@ -27,13 +27,14 @@ def pretrain_raw_convNet(path):
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, mode='min', factor=.2, patience=5,
                                                      verbose=True, eps=precision)
 
-    best_weights = pre_train_model(model=model, cross_entropy_loss_for_class=cross_entropy_loss_classes,
-                        cross_entropy_loss_for_domain=cross_entropy_loss_domains, optimizer_class=optimizer, scheduler=scheduler,
-                        dataloaders={"train": participants_dataloaders_train,
-                                     "val": participants_dataloaders_validation},
-                        precision=precision)
+    best_weights, bn_statistics = pre_train_model(model=model, cross_entropy_loss_for_class=cross_entropy_loss_classes,
+                                                  cross_entropy_loss_for_domain=cross_entropy_loss_domains, optimizer_class=optimizer,
+                                                  scheduler=scheduler, dataloaders=
+                                                  {"train": participants_dataloaders_train,
+                                                   "val": participants_dataloaders_validation}, precision=precision)
 
-    torch.save(best_weights, f="weights/TL_best_weights.pt")
+    torch.save(best_weights, f="../weights/TL_best_weights.pt")
+    torch.save(bn_statistics, f="../weights/bn_statistics.pt")
 
 if __name__ == "__main__":
-    pretrain_raw_convNet(path="Dataset/processed_dataset")
+    pretrain_raw_convNet(path="../Dataset/processed_dataset")

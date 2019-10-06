@@ -55,6 +55,7 @@ def pre_train_model(model, cross_entropy_loss_for_class, cross_entropy_loss_for_
 
     best_loss = float('inf')
     best_weights = copy.deepcopy(model.state_dict())
+    best_bn_statistics = copy.deepcopy(list_dictionaries_BN_weights)
 
     patience = 30
     patience_increase = 30
@@ -183,6 +184,7 @@ def pre_train_model(model, cross_entropy_loss_for_class, cross_entropy_loss_for_
                     print("New best validation loss:", epoch_validation_loss)
                     best_loss = epoch_validation_loss
                     best_weights = copy.deepcopy(model.state_dict())
+                    best_bn_statistics = copy.deepcopy(list_dictionaries_BN_weights)
                     patience = patience_increase + epoch
 
         print("Epoch {} of {} took {:.3f}s".format(
@@ -198,7 +200,7 @@ def pre_train_model(model, cross_entropy_loss_for_class, cross_entropy_loss_for_
         time_elapsed // 60, time_elapsed % 60))
     print('Best val loss: {:4f}'.format(best_loss))
 
-    return best_weights
+    return best_weights, best_bn_statistics
 
 
 if __name__ == '__main__':

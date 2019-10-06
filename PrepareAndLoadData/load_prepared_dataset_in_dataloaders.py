@@ -54,23 +54,37 @@ def get_dataloader(examples_datasets, labels_datasets, number_of_cycle, validati
         return participants_dataloaders, participants_dataloaders_validation
 
 
-def load_dataloaders(path, number_of_cycle=4, batch_size=128):
+def load_dataloaders(path, number_of_cycle=4, batch_size=128, validation_cycle=3, get_test_set=True):
+    participants_dataloaders_test = []
+    'Get testing dataset'
+    if get_test_set:
+        datasets_test = np.load(path + "/RAW_3DC_test.npy")
+        examples_datasets_test, labels_datasets_test = datasets_test
+
+        participants_dataloaders_test = get_dataloader(examples_datasets_test, labels_datasets_test, number_of_cycle,
+                                                       validations_cycles=None, batch_size=batch_size)
+    'Get training dataset'
     datasets_train = np.load(path + "/RAW_3DC_train.npy")
     examples_datasets_train, labels_datasets_train = datasets_train
+    if validation_cycle is None:
+        participants_dataloaders_train = get_dataloader(examples_datasets_train, labels_datasets_train, number_of_cycle,
+                                                        validations_cycles=validation_cycle, batch_size=batch_size)
+        if get_test_set:
+            return participants_dataloaders_train, participants_dataloaders_test
+        else:
+            return participants_dataloaders_train
+    else:
+        participants_dataloaders_train, participants_dataloaders_validation = get_dataloader(examples_datasets_train,
+                                                                                             labels_datasets_train,
+                                                                                             number_of_cycle,
+                                                                                             validations_cycles=
+                                                                                             validation_cycle,
+                                                                                             batch_size=batch_size)
+        if get_test_set:
+            return participants_dataloaders_train, participants_dataloaders_validation, participants_dataloaders_test
+        else:
+            return participants_dataloaders_train, participants_dataloaders_validation
 
-    participants_dataloaders_train, participants_dataloaders_validation = get_dataloader(examples_datasets_train,
-                                                                                         labels_datasets_train,
-                                                                                         number_of_cycle,
-                                                                                         validations_cycles=3,
-                                                                                         batch_size=batch_size)
-
-    datasets_test = np.load(path + "/RAW_3DC_test.npy")
-    examples_datasets_test, labels_datasets_test = datasets_test
-
-    participants_dataloaders_test = get_dataloader(examples_datasets_test, labels_datasets_test, number_of_cycle,
-                                                   validations_cycles=None, batch_size=batch_size)
-
-    return participants_dataloaders_train, participants_dataloaders_validation, participants_dataloaders_test
 
 if __name__ == "__main__":
     train_dataset, validation_dataset, test_dataset = load_dataloaders("../Dataset/processed_dataset")
