@@ -56,9 +56,8 @@ def get_data_and_process_it_from_file(get_train_data, path, number_of_gestures=1
                                                      size_non_overlap=size_non_overlap)
                 examples.extend(examples_formatted)
                 labels.extend(np.ones(len(examples_formatted)) * gesture_index)
-
             examples_participants.append(examples)
-            labels_participant.append(examples)
+            labels_participant.append(labels)
 
         examples_datasets.append(examples_participants)
         labels_datasets.append(labels_participant)
@@ -90,4 +89,4 @@ def read_data(path, number_of_gestures=11, number_of_cycles=4, window_size=150, 
     
 
 if __name__ == '__main__':
-    read_data(path="../Dataset/3DC_dataset")
+    read_data(path="../Dataset/3DC_dataset", window_size=151)

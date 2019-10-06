@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 
 
-def get_dataframe(examples_datasets_train, labels_datasets_train, number_of_cycle):
+def get_dataframe(examples_datasets, labels_datasets, number_of_cycle):
     participants_dataframes = []
-    for participant_examples, participant_labels in zip(examples_datasets_train, labels_datasets_train):
+    for participant_examples, participant_labels in zip(examples_datasets, labels_datasets):
         X = []
         Y = []
 
