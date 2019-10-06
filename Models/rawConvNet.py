@@ -31,8 +31,13 @@ class Model(nn.Module):
         self._output = nn.Linear(self._number_of_channel_input*self._number_of_features_output, number_of_class)
         self._output_domain = nn.Linear(self._number_of_channel_input*self._number_of_features_output, 2)
 
+        self._number_of_blocks = number_of_blocks
+
         print(self)
         print("Number Parameters: ", self.get_n_params())
+
+    def get_number_of_blocks(self):
+        return self._number_of_blocks
 
     def get_n_params(self):
         model_parameters = filter(lambda p: p.requires_grad, self.parameters())
@@ -45,7 +50,7 @@ class Model(nn.Module):
             for _, layer in enumerate(block):
                 x = layer(x)
                 if isinstance(layer, nn.Conv2d):
-                    features_calculated['layer_' + str(i)] = torch.mean(x, dim=(2, 3))
+                    features_calculated['layer_' + str(i)] = torch.mean(x, dim=(2, 3)).cpu().numpy()
         # Perform the average pooling channel wise (i.e. for each channel of the armband), take the average output of
         # the features
         features_extracted = F.adaptive_avg_pool2d(x, (self._number_of_channel_input, 1)).view(
