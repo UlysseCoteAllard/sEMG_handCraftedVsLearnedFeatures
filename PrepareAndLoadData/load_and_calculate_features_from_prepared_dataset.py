@@ -1,40 +1,10 @@
 import numpy as np
-import pandas as pd
 
 import feature_extraction as fe
+from PrepareAndLoadData import load_prepared_dataset_in_dataframe
 
-def get_dataframe(examples_datasets, labels_datasets, number_of_cycle):
-    participants_dataframes = []
-    for participant_examples, participant_labels in zip(examples_datasets, labels_datasets):
-        X = []
-        Y = []
-
-        for cycle in range(number_of_cycle):
-            X.extend(participant_examples[cycle])
-            Y.extend(participant_labels[cycle])
-        data = {'examples': X,
-                'labels': Y}
-        df = pd.DataFrame(data)
-        participants_dataframes.append(df)
-    return participants_dataframes
-
-
-def load_dataframe(number_of_cycle=4):
-    datasets_train = np.load("../Dataset/processed_dataset/RAW_3DC_train.npy")
-    examples_datasets_train, labels_datasets_train = datasets_train
-
-    participants_dataframes_train = get_dataframe(examples_datasets_train, labels_datasets_train, number_of_cycle)
-
-    datasets_test = np.load("../Dataset/processed_dataset/RAW_3DC_test.npy")
-    examples_datasets_test, labels_datasets_test = datasets_test
-
-    participants_dataframes_test = get_dataframe(examples_datasets_test, labels_datasets_test, number_of_cycle)
-
-    return participants_dataframes_train, participants_dataframes_test
-
-
-if __name__ == "__main__":
-    train_dataset, test_dataset = load_dataframe()
+def extract_fetures_from_dataset():
+    train_dataset, test_dataset = load_prepared_dataset_in_dataframe.load_dataframe()
 
     num_subj = 22
     num_window = 4000
@@ -49,7 +19,7 @@ if __name__ == "__main__":
 
     for s in range(len(train_dataset)):
         subj_data = train_dataset[s]
-
+        print("Current subject: ", s)
         for w in range(len(subj_data)):
             win_data = subj_data.values[w]
             # Collect the feature vector for window #
@@ -62,11 +32,11 @@ if __name__ == "__main__":
     train_features = np.array(train_features)
     train_class = np.array(train_class)
 
-    np.save("../Dataset/processed_dataset/FEATURES_train",train_features)
-    np.save("../Dataset/processed_dataset/CLASS_train",train_class)
-
-
+    np.save("../Dataset/processed_dataset/FEATURES_train", train_features)
+    np.save("../Dataset/processed_dataset/CLASS_train", train_class)
+    '''
     for s in range(len(test_dataset)):
+
         subj_data = test_dataset[s]
 
         for w in range(len(subj_data)):
@@ -80,8 +50,12 @@ if __name__ == "__main__":
 
     test_features = np.array(test_features)
     test_class = np.array(test_class)
-    np.save("../Dataset/processed_dataset/FEATURES_test",test_features)
-    np.save("../Dataset/processed_dataset/CLASS_test",test_class)
+    np.save("../Dataset/processed_dataset/FEATURES_test", test_features)
+    np.save("../Dataset/processed_dataset/CLASS_test", test_class)
 
     # Save test features
     # Save test class
+    '''
+
+if __name__ == "__main__":
+    extract_fetures_from_dataset()
