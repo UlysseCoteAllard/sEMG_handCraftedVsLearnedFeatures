@@ -66,7 +66,7 @@ def train_regressor(model, criterion, optimizer, scheduler, dataloaders, num_epo
                 # get the inputs
                 inputs, labels = data
 
-                inputs, labels = Variable(inputs.cuda()), Variable(labels.cuda())
+                inputs, labels = inputs.cuda(), labels.cuda()
                 # zero the parameter gradients
                 optimizer.zero_grad()
                 if phase == 'train':
