@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from Models.model_training import pre_train_model
 from Models.rawConvNet import Model
+from Models.model_training import pre_train_model
 from PrepareAndLoadData.load_prepared_dataset_in_dataloaders import load_dataloaders
 
 

@@ -44,7 +44,10 @@ class Model(nn.Module):
         number_params = sum([np.prod(p.size()) for p in model_parameters])
         return number_params
 
-    def forward(self, x, lambda_value=None):
+    def forward(self, x, lambda_value=None, use_regressor_forward=False):
+        if use_regressor_forward:
+            return self.regressor_forward(x)
+
         features_calculated = {}
         for i, block in enumerate(self._features_extractor):
             for _, layer in enumerate(block):
@@ -66,12 +69,35 @@ class Model(nn.Module):
     def generate_bloc(self, block_id, number_features_input=64, number_of_features_output=64, filter_size=(1, 25),
                       dropout_rate=0.5):
         block = nn.Sequential(OrderedDict([
-            ("conv2D_" + str(block_id), nn.Conv2d(in_channels=number_features_input, out_channels=number_of_features_output,
-                                             kernel_size=filter_size, stride=1)),
-            ("batchNorm_" + str(block_id), nn.BatchNorm2d(num_features=number_of_features_output, momentum=0.99, eps=1e-3)),
+            ("conv2D_" + str(block_id), nn.Conv2d(in_channels=number_features_input, out_channels=
+            number_of_features_output, kernel_size=filter_size, stride=1)),
+            ("batchNorm_" + str(block_id), nn.BatchNorm2d(num_features=number_of_features_output, momentum=0.99,
+                                                          eps=1e-3)),
             ("leakyRelu_" + str(block_id), nn.LeakyReLU(negative_slope=0.1, inplace=True)),
             ("dropout2D_" + str(block_id), nn.Dropout2d(p=dropout_rate))
         ]))
 
         return block
 
+    def regressor_forward(self, x):
+        for i, block in enumerate(self._features_extractor):
+            for _, layer in enumerate(block):
+                x = layer(x)
+                if isinstance(layer, nn.Conv2d) and i == self._layers_to_regress_from:
+                    break
+        print(np.shape(x))
+        output_regressor = self._output_regressor(x)
+        return output_regressor
+
+
+    def transform_to_regressor(self, layer_to_regress_from, freeze_features_extraction=True):
+        assert 0 <= layer_to_regress_from <= self._number_of_blocks
+
+        self._layers_to_regress_from = layer_to_regress_from
+
+        if freeze_features_extraction:
+            # Remove the possibility of changing the weights of the network
+            for param in self.parameters():
+                param.requires_grad = False
+
+        self._output_regressor = nn.Linear(self._number_of_channel_input*self._number_of_features_output, 1)

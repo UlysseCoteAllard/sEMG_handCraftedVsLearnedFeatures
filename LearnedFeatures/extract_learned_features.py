@@ -6,10 +6,10 @@ import torch
 from Models.rawConvNet import Model
 from PrepareAndLoadData.load_prepared_dataset_in_dataloaders import load_dataloaders
 
-def extract_learned_features_average(path_datset='../Dataset/processed_dataset',
+def extract_learned_features_average(path_dataset='../Dataset/processed_dataset',
                                      path_weights='../weights/TL_best_weights.pt',
                                      path_bn_statistics="../weights/bn_statistics.pt"):
-    participants_dataloaders_train = load_dataloaders(path_datset, batch_size=512, validation_cycle=None,
+    participants_dataloaders_train = load_dataloaders(path_dataset, batch_size=512, validation_cycle=None,
                                                       get_test_set=False, drop_last=False, shuffle=False)
     # Define Model
     model = Model(number_of_class=11, number_of_blocks=6, dropout_rate=0.35).cuda()
@@ -71,6 +71,6 @@ def extract_learned_features_average(path_datset='../Dataset/processed_dataset',
 
 
 if __name__ == "__main__":
-    extract_learned_features_average(path_datset='../Dataset/processed_dataset',
+    extract_learned_features_average(path_dataset='../Dataset/processed_dataset',
                                      path_weights='../weights/TL_best_weights.pt',
                                      path_bn_statistics="../weights/bn_statistics.pt")
