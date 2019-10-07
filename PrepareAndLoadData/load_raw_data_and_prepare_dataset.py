@@ -1,7 +1,9 @@
 import os
 import numpy as np
 
-from PrepareAndLoadData.prepare_dataset_utils import butter_bandpass_filter
+#from PrepareAndLoadData.prepare_dataset_utils import butter_bandpass_filter
+from prepare_dataset_utils import butter_bandpass_filter
+
 
 def format_examples(emg_examples, window_size=150, size_non_overlap=50):
     examples_formatted = []

@@ -1,96 +1,87 @@
 import numpy as np
+import pandas as pd
 
-import torch
-from torch.utils.data import TensorDataset
+import feature_extraction as fe
 
-
-def scramble(examples, labels):
-    random_vec = np.arange(len(labels))
-    np.random.shuffle(random_vec)
-    new_labels = []
-    new_examples = []
-
-    for i in random_vec:
-        new_labels.append(labels[i])
-        new_examples.append(examples[i])
-    return new_examples, new_labels
-
-
-def get_dataloader(examples_datasets, labels_datasets, number_of_cycle, validations_cycles=None, batch_size=128,
-                   drop_last=True, shuffle=True):
-    participants_dataloaders = []
-    participants_dataloaders_validation = []
-
+def get_dataframe(examples_datasets, labels_datasets, number_of_cycle):
+    participants_dataframes = []
     for participant_examples, participant_labels in zip(examples_datasets, labels_datasets):
-        X, Y, X_valid, Y_valid = [], [], [], []
+        X = []
+        Y = []
 
         for cycle in range(number_of_cycle):
-            if validations_cycles is None:
-                X.extend(participant_examples[cycle])
-                Y.extend(participant_labels[cycle])
-            else:
-                if cycle < validations_cycles:
-                    X.extend(participant_examples[cycle])
-                    Y.extend(participant_labels[cycle])
-                else:
-                    X_valid.extend(participant_examples[cycle])
-                    Y_valid.extend(participant_labels[cycle])
-        X = np.expand_dims(X, axis=1)
-        train = TensorDataset(torch.from_numpy(np.array(X, dtype=np.float32)),
-                              torch.from_numpy(np.array(Y, dtype=np.int64)))
-        examplesloader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last)
-        participants_dataloaders.append(examplesloader)
-
-        if validations_cycles is not None:
-            X_valid = np.expand_dims(X_valid, axis=1)
-            validation = TensorDataset(torch.from_numpy(np.array(X_valid, dtype=np.float32)),
-                                       torch.from_numpy(np.array(Y_valid, dtype=np.int64)))
-            validationloader = torch.utils.data.DataLoader(validation, batch_size=len(X_valid), shuffle=shuffle,
-                                                           drop_last=drop_last)
-            participants_dataloaders_validation.append(validationloader)
-
-    if validations_cycles is None:
-        return participants_dataloaders
-    else:
-        return participants_dataloaders, participants_dataloaders_validation
+            X.extend(participant_examples[cycle])
+            Y.extend(participant_labels[cycle])
+        data = {'examples': X,
+                'labels': Y}
+        df = pd.DataFrame(data)
+        participants_dataframes.append(df)
+    return participants_dataframes
 
 
-def load_dataloaders(path, number_of_cycle=4, batch_size=128, validation_cycle=3, get_test_set=True, drop_last=True,
-                     shuffle=True):
-    participants_dataloaders_test = []
-    'Get testing dataset'
-    if get_test_set:
-        datasets_test = np.load(path + "/RAW_3DC_test.npy")
-        examples_datasets_test, labels_datasets_test = datasets_test
-
-        participants_dataloaders_test = get_dataloader(examples_datasets_test, labels_datasets_test, number_of_cycle,
-                                                       validations_cycles=None, batch_size=batch_size,
-                                                       drop_last=drop_last, shuffle=False)
-    'Get training dataset'
-    datasets_train = np.load(path + "/RAW_3DC_train.npy")
+def load_dataframe(number_of_cycle=4):
+    datasets_train = np.load("../Dataset/processed_dataset/RAW_3DC_train.npy")
     examples_datasets_train, labels_datasets_train = datasets_train
-    if validation_cycle is None:
-        participants_dataloaders_train = get_dataloader(examples_datasets_train, labels_datasets_train, number_of_cycle,
-                                                        validations_cycles=validation_cycle, batch_size=batch_size,
-                                                        drop_last=drop_last, shuffle=shuffle)
-        if get_test_set:
-            return participants_dataloaders_train, participants_dataloaders_test
-        else:
-            return participants_dataloaders_train
-    else:
-        participants_dataloaders_train, participants_dataloaders_validation = get_dataloader(examples_datasets_train,
-                                                                                             labels_datasets_train,
-                                                                                             number_of_cycle,
-                                                                                             validations_cycles=
-                                                                                             validation_cycle,
-                                                                                             batch_size=batch_size,
-                                                                                             drop_last=drop_last,
-                                                                                             shuffle=False)
-        if get_test_set:
-            return participants_dataloaders_train, participants_dataloaders_validation, participants_dataloaders_test
-        else:
-            return participants_dataloaders_train, participants_dataloaders_validation
+
+    participants_dataframes_train = get_dataframe(examples_datasets_train, labels_datasets_train, number_of_cycle)
+
+    datasets_test = np.load("../Dataset/processed_dataset/RAW_3DC_test.npy")
+    examples_datasets_test, labels_datasets_test = datasets_test
+
+    participants_dataframes_test = get_dataframe(examples_datasets_test, labels_datasets_test, number_of_cycle)
+
+    return participants_dataframes_train, participants_dataframes_test
 
 
 if __name__ == "__main__":
-    train_dataset, validation_dataset, test_dataset = load_dataloaders("../Dataset/processed_dataset")
+    train_dataset, test_dataset = load_dataframe()
+
+    num_subj = 22
+    num_window = 4000
+
+    train_features = [[]]
+    test_features = [[]]
+
+    train_class = []
+    test_class = []
+
+    window = 0
+
+    for s in range(len(train_dataset)):
+        subj_data = train_dataset[s]
+
+        for w in range(len(subj_data)):
+            win_data = subj_data.values[w]
+            # Collect the feature vector for window #
+            train_features[window].append(fe.extract_features(win_data[0]))
+            # Add list to list of list (make slot for next feature vector)
+            train_features.append(list())
+            train_class.append(win_data[1])
+            window += 1
+
+    train_features = np.array(train_features)
+    train_class = np.array(train_class)
+
+    np.save("../Dataset/processed_dataset/FEATURES_train",train_features)
+    np.save("../Dataset/processed_dataset/CLASS_train",train_class)
+
+
+    for s in range(len(test_dataset)):
+        subj_data = test_dataset[s]
+
+        for w in range(len(subj_data)):
+            win_data = subj_data.values[w]
+            # Collect the feature vector for window #
+            test_features[window].append(fe.extract_features(win_data[0]))
+            # Add list to list of list (make slot for next feature vector)
+            test_features.append(list())
+            test_class.append(win_data[1])
+            window += 1
+
+    test_features = np.array(test_features)
+    test_class = np.array(test_class)
+    np.save("../Dataset/processed_dataset/FEATURES_test",test_features)
+    np.save("../Dataset/processed_dataset/CLASS_test",test_class)
+
+    # Save test features
+    # Save test class
