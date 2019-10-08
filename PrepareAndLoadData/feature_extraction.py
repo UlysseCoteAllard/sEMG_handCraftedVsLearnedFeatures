@@ -305,7 +305,7 @@ def getSTD(vector):
 
 def getTM(vector, order=3):
     vector = np.asarray(vector)
-    return np.abs(np.mean(np.power(vector,order)))
+    return np.abs(np.mean(np.power(vector, order)))
 
 # New function
 def getTTP(vector):

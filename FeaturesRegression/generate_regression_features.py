@@ -1,3 +1,8 @@
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -57,9 +62,46 @@ def get_regressor_and_test_it(feature, path_dataset='../Dataset/processed_datase
         print("BLOCK INDEX: ", number_of_block, "  MEAN ERROR PARTICIPANT : ", mean_error_participant)
         mean_error_layer.append(mean_error_participant)
     print(mean_error_layer)
+    mean_error_layer = np.array(mean_error_layer)
+    np.save("ResultsRegression/data_for_feature_" + feature.__name__ + ".npy", mean_error_layer)
+    generate_regression_graph(mean_error_layer, feature=feature)
+
+def generate_regression_graph(data, feature):
+    sns.set()
+    print(data)
+    print(np.shape(data))
+    layers = []
+    participants = []
+    mseloss = []
+    for i, layer in enumerate(data):
+        if i > 0:
+            for j, participants_mse in enumerate(layer):
+                mseloss.append(participants_mse)
+                layers.append(i + 1)
+                participants.append(j)
+
+    df = pd.DataFrame({"Layer": layers,
+                       "Participants": participants,
+                       "Mean Square Error": mseloss})
+    print(df)
+
+    sns.catplot("Layer", "Mean Square Error", data=df, kind="point")
+    plt.title(feature.__name__)
+    plt.show()
 
 
 if __name__ == "__main__":
-    get_regressor_and_test_it(feature=feature_extraction.getRMS, path_dataset='../Dataset/processed_dataset',
-                              path_weights='../weights/TL_best_weights.pt',
-                              path_bn_statistics="../weights/bn_statistics.pt")
+
+    features = [feature_extraction.getRMS, feature_extraction.getZC, feature_extraction.getSSC,
+                feature_extraction.getMAVSDn, feature_extraction.getSKEW, feature_extraction.getIEMG]
+    for feature in features:
+        data = np.load("ResultsRegression/data_for_feature_" + feature.__name__ + ".npy")
+        generate_regression_graph(data, feature)
+    '''
+    features = [feature_extraction.getRMS, feature_extraction.getZC, feature_extraction.getSSC,
+                feature_extraction.getMAVSDn, feature_extraction.getSKEW, feature_extraction.getIEMG]
+    for feature in features:
+        get_regressor_and_test_it(feature=feature, path_dataset='../Dataset/processed_dataset',
+                                  path_weights='../weights/TL_best_weights.pt',
+                                  path_bn_statistics="../weights/bn_statistics.pt")
+    '''

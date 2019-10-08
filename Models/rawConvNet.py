@@ -50,16 +50,19 @@ class Model(nn.Module):
         number_params = sum([np.prod(p.size()) for p in model_parameters])
         return number_params
 
-    def forward(self, x, lambda_value=None, use_regressor_forward=False):
+    def forward(self, x, lambda_value=None, use_regressor_forward=False, use_forward_visualization=False):
         if use_regressor_forward:
             return self.regressor_forward(x)
+
+        if use_forward_visualization:
+            return self.forward_visualization(x)
 
         features_calculated = {}
         for i, block in enumerate(self._features_extractor):
             for _, layer in enumerate(block):
                 x = layer(x)
-                if isinstance(layer, nn.Conv2d):
-                    features_calculated['layer_' + str(i)] = torch.mean(x, dim=(2, 3)).cpu().numpy()
+                if isinstance(layer, nn.BatchNorm2d):
+                    features_calculated['layer_' + str(i)] = torch.mean(x, dim=(3)).detach().cpu().numpy()
         # Perform the average pooling channel wise (i.e. for each channel of the armband), take the average output of
         # the features
         features_extracted = F.adaptive_avg_pool2d(x, (self._number_of_channel_input, 1)).view(
@@ -89,7 +92,7 @@ class Model(nn.Module):
         for i, block in enumerate(self._features_extractor):
             for j, layer in enumerate(block):
                 x = layer(x)
-                if isinstance(layer, nn.Conv2d) and i == self._layers_to_regress_from:
+                if isinstance(layer, nn.BatchNorm2d) and i == self._layers_to_regress_from:
                     return x
         return x
 

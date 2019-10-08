@@ -45,7 +45,7 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
 
     for key_layer in features_learned_per_layers:
         for participant in features_learned_per_layers[key_layer]:
-                print(np.shape(participant))
+                print(np.shape(participant[0]))
 
     'Make number_of_blocks_dataframe (i.e. number of layers). The dataframe will be of the shape:'
     ' Participant x Examples x Mean Output Feature Maps'
@@ -67,7 +67,6 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
     'Save the list of dataframes'
     for i, dataframe in enumerate(dataframes_grouped_by_layers):
         dataframe.to_csv(path_or_buf="../LearnedFeatures/learned_features_layer_" + str(i) + ".csv")
-
 
 
 if __name__ == "__main__":
