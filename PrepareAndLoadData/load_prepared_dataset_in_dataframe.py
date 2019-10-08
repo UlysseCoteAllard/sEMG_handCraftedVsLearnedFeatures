@@ -20,12 +20,12 @@ def get_dataframe(examples_datasets, labels_datasets, number_of_cycle):
 
 
 def load_dataframe(number_of_cycle=4):
-    datasets_train = np.load("../Dataset/processed_dataset/RAW_3DC_train.npy")
+    datasets_train = np.load("../Dataset/processed_dataset/RAW_3DC_train.npy",allow_pickle=True)
     examples_datasets_train, labels_datasets_train = datasets_train
 
     participants_dataframes_train = get_dataframe(examples_datasets_train, labels_datasets_train, number_of_cycle)
 
-    datasets_test = np.load("../Dataset/processed_dataset/RAW_3DC_test.npy")
+    datasets_test = np.load("../Dataset/processed_dataset/RAW_3DC_test.npy",allow_pickle=True)
     examples_datasets_test, labels_datasets_test = datasets_test
 
     participants_dataframes_test = get_dataframe(examples_datasets_test, labels_datasets_test, number_of_cycle)
