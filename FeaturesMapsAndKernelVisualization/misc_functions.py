@@ -6,9 +6,10 @@ import os
 import copy
 import numpy as np
 from PIL import Image
+import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import matplotlib.cm as mpl_color_map
-from matplotlib import cm
 
 import torch
 from torch.autograd import Variable
@@ -70,19 +71,47 @@ def save_class_activation_images(org_img, activation_map, file_name):
     path_to_file = os.path.join('results_gradcam', file_name+'_Cam_Grayscale.png')
     save_image(np.swapaxes(activation_map, 1, 0), path_to_file)
 
-def apply_colormap_to_1D_signal(x, activation, title):
-    activation = np.swapaxes(activation, 1, 0)
-    fig = plt.figure(figsize=(10, 1))
-    print(np.shape(x))
-    print("Activation: ", np.shape(activation))
-    print(activation)
-    fig.suptitle(title)
+def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+    new_cmap = colors.LinearSegmentedColormap.from_list(
+        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+        cmap(np.linspace(minval, maxval, n)))
+    return new_cmap
+
+def apply_colormap_to_1D_signal(input_to_network, activation, title):
+    sns.set()
+    if activation is not None:
+        color_cmap = truncate_colormap(mpl_color_map.inferno, 0.0, .9)
+        activation = np.swapaxes(activation, 1, 0)
+        print("Activation: ", np.shape(activation))
+        print(activation)
+
+    fig = plt.figure(figsize=(12, 8))
+    fig.text(.5, .94, title, ha='center')
+    fig.text(0.5, 0.04, 'Time', ha='center')
+    fig.text(0.04, 0.5, 'Channel', va='center', rotation='vertical')
+    print(np.shape(input_to_network))
+
     for i in range(10):
+        x_for_linear_interpolation = np.linspace(0, len(input_to_network[0][0][i]), 5000)
+
+
+
+        print(np.shape(input_to_network[0][0][i]))
+        channel_linearly_interpolated = np.interp(x_for_linear_interpolation,
+                                                  np.linspace(0, len(input_to_network[0][0][i]),
+                                                              len(input_to_network[0][0][i])),
+                                                  input_to_network[0][0][i])
         plt.subplot(10, 1, i + 1)
-        plt.scatter(np.linspace(0, 151, 151), x[0][0][i], c=cm.hot(np.abs(activation[i])), edgecolors='none')
-        plt.plot(x[0][0][i])
+        if activation is not None:
+            activation_interpolated = np.interp(x_for_linear_interpolation,
+                                                np.linspace(0, len(input_to_network[0][0][i]),
+                                                            len(input_to_network[0][0][i])),
+                                                activation[i])
+            plt.scatter(x_for_linear_interpolation, channel_linearly_interpolated,
+                        c=color_cmap(np.abs(activation_interpolated)), edgecolors='none')
+        plt.plot(np.linspace(0, 151, 151), input_to_network[0][0][i])
         plt.axis('off')
-    #plt.show()
+    plt.savefig("results_gradcam/" + title + ".png", dpi=600)
 
 def apply_colormap_on_image(org_im, activation, colormap_name):
     """

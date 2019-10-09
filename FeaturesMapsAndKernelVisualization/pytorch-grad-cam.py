@@ -94,11 +94,13 @@ class GradCam():
 
         cam = np.maximum(cam, 0)
         cam = (cam - np.min(cam)) / (np.max(cam) - np.min(cam))  # Normalize between 0-1
+        print(np.shape(cam))
         print("BEFORE RESIZING: ", cam)
         cam = np.uint8(cam * 255)  # Scale between 0-255 to visualize
-        cam = np.uint8(Image.fromarray(cam).resize((input_image.shape[2],
-                       input_image.shape[3]), Image.ANTIALIAS))/255
+        cam = np.uint8(Image.fromarray(np.swapaxes(cam, 1, 0)).resize((input_image.shape[2],
+                                                                       input_image.shape[3]), Image.ANTIALIAS)) / 255
         print("CAM READY: ", cam)
+        print(np.shape(cam))
         # ^ I am extremely unhappy with this line. Originally resizing was done in cv2 which
         # supports resizing numpy matrices with antialiasing, however,
         # when I moved the repository to PIL, this option was out of the window.
@@ -116,7 +118,7 @@ if __name__ == '__main__':
     best_weights = torch.load(path_weights)
     model.load_state_dict(best_weights)
     list_dictionaries_bn_weights = torch.load(path_bn_statistics)
-    BN_weights = list_dictionaries_bn_weights[4]
+    BN_weights = list_dictionaries_bn_weights[5]
     model.load_state_dict(BN_weights, strict=False)
 
     participants_dataloaders_train = load_dataloaders(path_dataset, batch_size=1, validation_cycle=None,
@@ -127,7 +129,8 @@ if __name__ == '__main__':
     for image, label in participants_dataloaders_train[5]:
         x = image
         label_found = label
-        break
+        if label == 9:
+            break
 
     print(np.shape(x))
     sample_image = F.to_pil_image(x[0]).transpose(Image.ROTATE_90)
@@ -137,6 +140,7 @@ if __name__ == '__main__':
     (original_image, prep_img, target_class, file_name_to_export, pretrained_model) =\
         get_example_params(target_example)
     pretrained_model = model
+    apply_colormap_to_1D_signal(x.numpy(), None, gestures[label_found.item()] + " Input data")
     for i in range(6):
         # Grad cam
         grad_cam = GradCam(pretrained_model, target_layer=i)
@@ -146,9 +150,8 @@ if __name__ == '__main__':
 
         # Save mask
 
-        apply_colormap_to_1D_signal(x.numpy(), cam, gestures[label_found.item()])
+        apply_colormap_to_1D_signal(x.numpy(), cam, gestures[label_found.item()] + " Layer_" + str(i))
     import matplotlib.pyplot as plt
-    plt.show()
     save_class_activation_images(sample_image, cam, gestures[label_found.item()])
     print('Grad cam completed')
 
