@@ -66,7 +66,7 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
 
     'Save the list of dataframes'
     for i, dataframe in enumerate(dataframes_grouped_by_layers):
-        dataframe.to_csv(path_or_buf="../LearnedFeatures/learned_features_layer_" + str(i) + ".csv")
+        dataframe.to_csv(path_or_buf="../LearnedFeatures/features/learned_features_layer_" + str(i) + ".csv")
 
 
 if __name__ == "__main__":

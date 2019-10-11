@@ -112,6 +112,7 @@ def apply_colormap_to_1D_signal(input_to_network, activation, title):
         plt.plot(np.linspace(0, 151, 151), input_to_network[0][0][i])
         plt.axis('off')
     plt.savefig("results_gradcam/" + title + ".png", dpi=600)
+    plt.show()
 
 def apply_colormap_on_image(org_im, activation, colormap_name):
     """

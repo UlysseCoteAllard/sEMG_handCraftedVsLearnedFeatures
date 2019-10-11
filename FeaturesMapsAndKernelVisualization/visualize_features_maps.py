@@ -67,7 +67,11 @@ def visualizeFeaturesMaps(path_dataset='../Dataset/processed_dataset', path_weig
                 for k in range(10):
                     plt.subplot(10, 1, k+1)
                     print(np.shape(act))
-                    plt.plot(act[idx][k])
+                    target = torch.ones(151)
+                    target *= float('nan')
+                    target[150] = 0
+                    target[:len(act[idx][k])] = act[idx][k]
+                    plt.plot(range(151), target)
                     plt.axis('off')
             #axarr[idx].imshow(act[idx])
     plt.show()

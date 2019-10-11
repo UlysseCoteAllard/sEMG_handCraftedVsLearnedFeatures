@@ -6,6 +6,7 @@ from PIL import Image
 import numpy as np
 import torch
 import torchvision.transforms.functional as F
+import torch.nn.functional as Functional
 
 from Models.rawConvNet import Model
 from PrepareAndLoadData.load_prepared_dataset_in_dataloaders import load_dataloaders
@@ -45,8 +46,10 @@ class CamExtractor():
         """
         # Forward pass on the convolutions
         conv_output, x = self.forward_pass_on_convolutions(x)
+        print(x.size())
         x = x.view(x.size(0), -1)  # Flatten
         # Forward pass on the classifier
+        print(x.size())
         x = self.model._output(x)
         return conv_output, x
 
@@ -114,7 +117,7 @@ if __name__ == '__main__':
     path_dataset = '../Dataset/processed_dataset'
     path_weights = '../weights/TL_best_weights.pt'
     path_bn_statistics = "../weights/bn_statistics.pt"
-    model = Model(number_of_class=11, number_of_blocks=6, dropout_rate=0.35)
+    model = Model(number_of_class=11, number_of_blocks=6, dropout_rate=0.35, filter_size=(1, 26))
     best_weights = torch.load(path_weights)
     model.load_state_dict(best_weights)
     list_dictionaries_bn_weights = torch.load(path_bn_statistics)
