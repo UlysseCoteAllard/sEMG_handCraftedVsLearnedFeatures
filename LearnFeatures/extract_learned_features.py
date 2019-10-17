@@ -59,14 +59,14 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
             feature_maps_mean.extend(participant)
             participant_index += 1
         data = {'Participant': participant_label,
-                'LearnedFeatures': feature_maps_mean}
+                'LearnFeatures': feature_maps_mean}
         df = pd.DataFrame(data)
         dataframes_grouped_by_layers.append(df)
         print(df)
 
     'Save the list of dataframes'
     for i, dataframe in enumerate(dataframes_grouped_by_layers):
-        dataframe.to_csv(path_or_buf="../LearnedFeatures/features/learned_features_layer_" + str(i) + ".csv")
+        dataframe.to_csv(path_or_buf="../LearnFeatures/features/learned_features_layer_" + str(i) + ".csv")
 
 
 if __name__ == "__main__":

@@ -118,6 +118,90 @@ def train_regressor(model, criterion, optimizer, scheduler, dataloaders, num_epo
     model.eval()
     return model
 
+
+def train_model_no_TL(model, criterion, optimizer, scheduler, dataloaders, num_epochs=500, precision=1e-8):
+    since = time.time()
+
+    best_loss = float('inf')
+
+    patience = 30
+    patience_increase = 30
+
+    best_weights = copy.deepcopy(model.state_dict())
+    for epoch in range(num_epochs):
+        epoch_start = time.time()
+        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+        print('-' * 10)
+
+        # Each epoch has a training and validation phase
+        for phase in ['train', 'val']:
+            if phase == 'train':
+                model.train(True)  # Set model to training mode
+            else:
+                model.train(False)  # Set model to evaluate mode
+
+            running_loss = 0.
+            running_corrects = 0
+            total = 0
+
+            for i, data in enumerate(dataloaders[phase], 0):
+                # get the inputs
+                inputs, labels = data
+
+                inputs, labels = Variable(inputs.cuda()), Variable(labels.cuda())
+                # zero the parameter gradients
+                optimizer.zero_grad()
+                if phase == 'train':
+                    model.train()
+                    # forward
+                    outputs, _ = model(inputs)
+                    _, predictions = torch.max(outputs.data, 1)
+                    loss = criterion(outputs, labels)
+                    loss.backward()
+                    optimizer.step()
+                    loss = loss.item()
+
+                else:
+                    model.eval()
+                    with torch.no_grad():
+
+                        # forward
+                        outputs, _ = model(inputs)
+                        _, predictions = torch.max(outputs.data, 1)
+
+                        loss = criterion(outputs, labels)
+                        loss = loss.item()
+
+                # statistics
+                running_loss += loss
+                running_corrects += torch.sum(predictions == labels.data)
+                total += labels.size(0)
+
+            epoch_loss = running_loss / total
+            epoch_acc = running_corrects.item() / total
+            print('{} Loss: {:.8f} Acc: {:.8}'.format(phase, epoch_loss, epoch_acc))
+
+            # deep copy the model
+            if phase == 'val':
+                scheduler.step(epoch_loss)
+                if epoch_loss + precision < best_loss:
+                    print("New best validation loss:", epoch_loss)
+                    best_loss = epoch_loss
+                    best_weights = copy.deepcopy(model.state_dict())
+                    patience = patience_increase + epoch
+        print("Epoch {} of {} took {:.3f}s".format(
+            epoch + 1, num_epochs, time.time() - epoch_start))
+        if epoch > patience:
+            break
+    print()
+
+    time_elapsed = time.time() - since
+
+    print('Training complete in {:.0f}m {:.0f}s'.format(
+        time_elapsed // 60, time_elapsed % 60))
+    print('Best val loss: {:4f}'.format(best_loss))
+    return best_weights
+
 def pre_train_model(model, cross_entropy_loss_for_class, cross_entropy_loss_for_domain, optimizer_class, scheduler,
                     dataloaders, num_epochs=500, precision=1e-8, weight_domain_loss=1e-1):
     since = time.time()
@@ -205,9 +289,9 @@ def pre_train_model(model, cross_entropy_loss_for_class, cross_entropy_loss_for_
 
                 loss_target.backward()
                 optimizer_class.step()
-                
 
-                # Get the back to the right BN statistics for the current domain
+
+                # Get back to the right BN statistics for the current domain
                 BN_weights = list_dictionaries_BN_weights[dataset_index]
                 model.load_state_dict(BN_weights, strict=False)
                 # Track the losses

@@ -48,7 +48,7 @@ def load_learned_features(layer):
     layer_contents = pd.read_csv("../Dataset/processed_dataset/learned_features_layer_" + str(layer) + ".csv")
 
     # All the info is in string format -> convert back to floats
-    #learned_features_string = layer_contents.LearnedFeatures.values
+    #learned_features_string = layer_contents.LearnFeatures.values
     learned_features_string = layer_contents.values
     learned_features_list = [[]]
     for w in range(len(learned_features_string)):

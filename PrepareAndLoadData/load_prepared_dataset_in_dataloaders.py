@@ -99,6 +99,36 @@ def load_dataloaders_for_regression(path, feature, number_of_cycle=4, batch_size
         else:
             return participants_dataloaders_train, participants_dataloaders_validation
 
+def get_dataloader_for_training_no_TL(examples_datasets, labels_datasets, number_of_cycle, validations_cycles=None,
+                                      batch_size=128, drop_last=True, shuffle=True):
+    X, Y, X_valid, Y_valid = [], [], [], []
+    for participant_examples, participant_labels in zip(examples_datasets, labels_datasets):
+        for cycle in range(number_of_cycle):
+            if validations_cycles is None:
+                X.extend(participant_examples[cycle])
+                Y.extend(participant_labels[cycle])
+            else:
+                if cycle < validations_cycles:
+                    X.extend(participant_examples[cycle])
+                    Y.extend(participant_labels[cycle])
+                else:
+                    X_valid.extend(participant_examples[cycle])
+                    Y_valid.extend(participant_labels[cycle])
+    X = np.expand_dims(X, axis=1)
+    train = TensorDataset(torch.from_numpy(np.array(X, dtype=np.float32)),
+                          torch.from_numpy(np.array(Y, dtype=np.int64)))
+    examplesloader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last)
+
+    if validations_cycles is not None:
+        X_valid = np.expand_dims(X_valid, axis=1)
+        validation = TensorDataset(torch.from_numpy(np.array(X_valid, dtype=np.float32)),
+                                   torch.from_numpy(np.array(Y_valid, dtype=np.int64)))
+        validationloader = torch.utils.data.DataLoader(validation, batch_size=batch_size, shuffle=shuffle,
+                                                       drop_last=drop_last)
+        return examplesloader, validationloader
+    else:
+        return examplesloader
+
 
 def get_dataloader(examples_datasets, labels_datasets, number_of_cycle, validations_cycles=None, batch_size=128,
                    drop_last=True, shuffle=True):
@@ -138,6 +168,24 @@ def get_dataloader(examples_datasets, labels_datasets, number_of_cycle, validati
     else:
         return participants_dataloaders, participants_dataloaders_validation
 
+def load_dataloader_for_training_without_TL(path, number_of_cycle=4, batch_size=128, validation_cycle=3, drop_last=True,
+                                            shuffle=True):
+
+    datasets_train = np.load(path + "/RAW_3DC_train.npy")
+    'Get training dataset'
+    examples_datasets_train, labels_datasets_train = datasets_train
+    if validation_cycle is None:
+        participants_dataloaders_train = get_dataloader_for_training_no_TL(examples_datasets_train,
+                                                                           labels_datasets_train, number_of_cycle,
+                                                                           validations_cycles=validation_cycle,
+                                                                           batch_size=batch_size, drop_last=drop_last,
+                                                                           shuffle=shuffle)
+        return participants_dataloaders_train
+    else:
+        participants_dataloaders_train, participants_dataloaders_validation = get_dataloader_for_training_no_TL(
+            examples_datasets_train, labels_datasets_train, number_of_cycle, validations_cycles=validation_cycle,
+            batch_size=batch_size, drop_last=drop_last, shuffle=shuffle)
+        return participants_dataloaders_train, participants_dataloaders_validation
 
 def load_dataloaders(path, number_of_cycle=4, batch_size=128, validation_cycle=3, get_test_set=True, drop_last=True,
                      shuffle=True):
@@ -169,7 +217,7 @@ def load_dataloaders(path, number_of_cycle=4, batch_size=128, validation_cycle=3
                                                                                              validation_cycle,
                                                                                              batch_size=batch_size,
                                                                                              drop_last=drop_last,
-                                                                                             shuffle=False)
+                                                                                             shuffle=shuffle)
         if get_test_set:
             return participants_dataloaders_train, participants_dataloaders_validation, participants_dataloaders_test
         else:

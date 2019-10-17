@@ -45,7 +45,7 @@ def save_gradient_images(gradient, file_name):
     gradient = gradient - gradient.min()
     gradient /= gradient.max()
     # Save image
-    path_to_file = os.path.join('../results', file_name + '.jpg')
+    path_to_file = os.path.join('results', file_name + '.jpg')
     save_image(gradient, path_to_file)
 
 
@@ -62,13 +62,13 @@ def save_class_activation_images(org_img, activation_map, file_name):
     # Grayscale activation map
     heatmap, heatmap_on_image = apply_colormap_on_image(org_img, activation_map, 'hsv')
     # Save colored heatmap
-    path_to_file = os.path.join('results_gradcam', file_name+'_Cam_Heatmap.png')
+    path_to_file = os.path.join('results', file_name+'_Cam_Heatmap.png')
     save_image(heatmap.transpose(Image.ROTATE_90), path_to_file)
     # Save heatmap on image
-    path_to_file = os.path.join('results_gradcam', file_name+'_Cam_On_Image.png')
+    path_to_file = os.path.join('results', file_name+'_Cam_On_Image.png')
     save_image(heatmap_on_image.transpose(Image.ROTATE_90), path_to_file)
     # Save grayscale heatmap
-    path_to_file = os.path.join('results_gradcam', file_name+'_Cam_Grayscale.png')
+    path_to_file = os.path.join('results', file_name+'_Cam_Grayscale.png')
     save_image(np.swapaxes(activation_map, 1, 0), path_to_file)
 
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
@@ -86,9 +86,9 @@ def apply_colormap_to_1D_signal(input_to_network, activation, title):
         print(activation)
 
     fig = plt.figure(figsize=(12, 8))
-    fig.text(.5, .94, title, ha='center')
-    fig.text(0.5, 0.04, 'Time', ha='center')
-    fig.text(0.04, 0.5, 'Channel', va='center', rotation='vertical')
+    #fig.text(.5, .94, title, ha='center')
+    #fig.text(0.5, 0.04, 'Time', ha='center')
+    #fig.text(0.04, 0.5, 'Channel', va='center', rotation='vertical')
     print(np.shape(input_to_network))
 
     for i in range(10):
@@ -108,11 +108,11 @@ def apply_colormap_to_1D_signal(input_to_network, activation, title):
                                                             len(input_to_network[0][0][i])),
                                                 activation[i])
             plt.scatter(x_for_linear_interpolation, channel_linearly_interpolated,
-                        c=color_cmap(np.abs(activation_interpolated)), edgecolors='none')
-        plt.plot(np.linspace(0, 151, 151), input_to_network[0][0][i])
+                        c=color_cmap(np.abs(activation_interpolated)), edgecolors='none', s=8**2)
+        plt.plot(np.linspace(0, 151, 151), input_to_network[0][0][i], linewidth=2)
         plt.axis('off')
-    plt.savefig("results_gradcam/" + title + ".png", dpi=600)
-    plt.show()
+    plt.savefig("results/" + title + ".png", dpi=600)
+    #plt.show()
 
 def apply_colormap_on_image(org_im, activation, colormap_name):
     """

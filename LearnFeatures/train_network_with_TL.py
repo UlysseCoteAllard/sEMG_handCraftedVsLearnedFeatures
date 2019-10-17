@@ -1,4 +1,6 @@
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
@@ -6,6 +8,7 @@ import torch.optim as optim
 
 from Models.rawConvNet import Model
 from Models.model_training import pre_train_model
+from LearnFeatures.utils_learn_features import print_confusion_matrix
 from PrepareAndLoadData.load_prepared_dataset_in_dataloaders import load_dataloaders
 
 
@@ -27,7 +30,7 @@ def pretrain_raw_convNet(path, filter_size=(1, 11)):
 
     # Define Scheduler
     precision = 1e-8
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, mode='min', factor=.2, patience=5,
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer=optimizer, mode='min', factor=.2, patience=15,
                                                      verbose=True, eps=precision)
 
     best_weights, bn_statistics = pre_train_model(model=model, cross_entropy_loss_for_class=cross_entropy_loss_classes,
@@ -69,8 +72,8 @@ def test_network_raw_convNet(path_dataset = '../Dataset/processed_dataset',
                 ground_truth_participant.extend(labels.numpy())
         print("Participant: ", participant_index, " Accuracy: ",
               np.mean(np.array(predictions_participant) == np.array(ground_truth_participant)))
-        predictions.append(np.array(predictions_participant))
-        ground_truth.append(np.array(ground_truth_participant))
+        predictions.append(predictions_participant)
+        ground_truth.append(ground_truth_participant)
         accuracies.append(np.mean(np.array(predictions_participant) == np.array(ground_truth_participant)))
     print("OVERALL ACCURACY: " + str(np.mean(accuracies)))
 
@@ -83,8 +86,26 @@ def test_network_raw_convNet(path_dataset = '../Dataset/processed_dataset',
         myfile.write(str(accuracies) + '\n')
         myfile.write("OVERALL ACCURACY: " + str(np.mean(accuracies)))
 
+    return predictions, ground_truth
+
 if __name__ == "__main__":
     filter_size = (1, 26)
-    pretrain_raw_convNet(path="../Dataset/processed_dataset", filter_size=filter_size)
+    #pretrain_raw_convNet(path="../Dataset/processed_dataset", filter_size=filter_size)
+    predictions, ground_truth = test_network_raw_convNet(filter_size=filter_size)
 
-    test_network_raw_convNet(filter_size=filter_size)
+
+    classes = ["Neutral", "Radial Deviation", "Wrist Flexion", "Ulnar Deviation", "Wrist Extension", "Supination",
+               "Pronation", "Power Grip", "Open Hand", "Chuck Grip", "Pinch Grip"]
+    font_size = 24
+    sns.set(style='dark')
+
+    fig, axs = print_confusion_matrix(ground_truth=ground_truth, predictions=predictions,
+                                      class_names=classes, title="ConvNet using AdaDANN training", fontsize=font_size)
+
+    #fig.suptitle("ConvNet using AdaDANN training", fontsize=28)
+    mng = plt.get_current_fig_manager()
+    #mng.window.state('zoomed')  # works fine on Windows!
+    plt.tight_layout()
+    plt.gcf().subplots_adjust(bottom=0.13)
+    plt.gcf().subplots_adjust(top=0.90)
+    plt.show()

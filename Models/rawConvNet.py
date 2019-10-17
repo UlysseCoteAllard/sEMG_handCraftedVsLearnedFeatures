@@ -65,8 +65,9 @@ class Model(nn.Module):
                     features_calculated['layer_' + str(i)] = torch.mean(x, dim=(3)).detach().cpu().numpy()
         # Perform the average pooling channel wise (i.e. for each channel of the armband), take the average output of
         # the features
-        features_extracted = F.adaptive_avg_pool2d(x, (self._number_of_channel_input, 1)).view(
-            -1, self._number_of_channel_input * self._number_of_features_output)
+        #features_extracted = F.adaptive_avg_pool2d(x, (self._number_of_channel_input, 1)).view(
+        #    -1, self._number_of_channel_input * self._number_of_features_output)
+        features_extracted = x.view(-1, self._number_of_channel_input * self._number_of_features_output)
         output = self._output(features_extracted)
         if lambda_value is None:
             return output, features_calculated
@@ -75,7 +76,7 @@ class Model(nn.Module):
             output_domain = self._output_domain(reversed_layer)
             return output, output_domain, features_calculated
 
-    def generate_bloc(self, block_id, number_features_input=64, number_of_features_output=64, filter_size=(1, 25),
+    def generate_bloc(self, block_id, number_features_input=64, number_of_features_output=64, filter_size=(1, 26),
                       dropout_rate=0.5):
         block = nn.Sequential(OrderedDict([
             ("conv2D_" + str(block_id), nn.Conv2d(in_channels=number_features_input, out_channels=

@@ -95,15 +95,18 @@ class GradCam():
         for i, w in enumerate(weights):
             cam += w * target[i, :, :]
 
+        # ReLU activation
+        cam = np.array(cam)
         cam = np.maximum(cam, 0)
-        cam = (cam - np.min(cam)) / (np.max(cam) - np.min(cam))  # Normalize between 0-1
         print(np.shape(cam))
         print("BEFORE RESIZING: ", cam)
+        cam = (cam - np.min(cam)) / (np.max(cam) - np.min(cam))  # Normalize between 0-1
         cam = np.uint8(cam * 255)  # Scale between 0-255 to visualize
         cam = np.uint8(Image.fromarray(np.swapaxes(cam, 1, 0)).resize((input_image.shape[2],
                                                                        input_image.shape[3]), Image.ANTIALIAS)) / 255
         print("CAM READY: ", cam)
         print(np.shape(cam))
+        cam = cam.clip(min=0)
         # ^ I am extremely unhappy with this line. Originally resizing was done in cv2 which
         # supports resizing numpy matrices with antialiasing, however,
         # when I moved the repository to PIL, this option was out of the window.
@@ -114,28 +117,36 @@ class GradCam():
 
 
 if __name__ == '__main__':
+    'Everything related to the dataset'
+    participant_id = 21
     path_dataset = '../Dataset/processed_dataset'
+    participants_dataloaders_train = load_dataloaders(path_dataset, batch_size=1, validation_cycle=None,
+                                                      get_test_set=False, drop_last=False, shuffle=False)
+    gestures = ["Neutral", "Radial Deviation", "Wrist Flexion", "Ulnar Deviation", "Wrist Extension", "Supination",
+                "Pronation", "Power Grip", "Open Hand", "Chuck Grip", "Pinch Grip"]
+    x, label_found = None, None
+    k = 0
+    for image, label in participants_dataloaders_train[participant_id]:
+        x = image
+        label_found = label
+        if label == 7:
+            k += 1
+        if k > 100:
+            break
+    apply_colormap_to_1D_signal(x.numpy(), None, gestures[label_found.item()] + " Input data")
+    print(np.shape(x))
+
+    'Everything related to the models'
     path_weights = '../weights/TL_best_weights.pt'
     path_bn_statistics = "../weights/bn_statistics.pt"
     model = Model(number_of_class=11, number_of_blocks=6, dropout_rate=0.35, filter_size=(1, 26))
     best_weights = torch.load(path_weights)
     model.load_state_dict(best_weights)
     list_dictionaries_bn_weights = torch.load(path_bn_statistics)
-    BN_weights = list_dictionaries_bn_weights[5]
+    BN_weights = list_dictionaries_bn_weights[participant_id]
     model.load_state_dict(BN_weights, strict=False)
 
-    participants_dataloaders_train = load_dataloaders(path_dataset, batch_size=1, validation_cycle=None,
-                                                      get_test_set=False, drop_last=False, shuffle=True)
-    gestures = ["Neutral", "Radial Deviation", "Wrist Flexion", "Ulnar Deviation", "Wrist Extension", "Supination",
-                "Pronation", "Power Grip", "Open Hand", "Chuck Grip", "Pinch Grip"]
-    x, label_found = None, None
-    for image, label in participants_dataloaders_train[5]:
-        x = image
-        label_found = label
-        if label == 9:
-            break
-
-    print(np.shape(x))
+    'Everything related to Grad-CAM'
     sample_image = F.to_pil_image(x[0]).transpose(Image.ROTATE_90)
     #sample_image.transpose(Image.ROTATE_90).show()
     # Get params
@@ -143,7 +154,6 @@ if __name__ == '__main__':
     (original_image, prep_img, target_class, file_name_to_export, pretrained_model) =\
         get_example_params(target_example)
     pretrained_model = model
-    apply_colormap_to_1D_signal(x.numpy(), None, gestures[label_found.item()] + " Input data")
     for i in range(6):
         # Grad cam
         grad_cam = GradCam(pretrained_model, target_layer=i)
