@@ -66,7 +66,7 @@ def get_data_and_process_it_from_file(get_train_data, path, number_of_gestures=1
 
     return examples_datasets, labels_datasets
 
-def read_data(path, number_of_gestures=11, number_of_cycles=4, window_size=150, size_non_overlap=50):
+def read_data(path, number_of_gestures=11, number_of_cycles=4, window_size=151, size_non_overlap=50):
     print("Loading and preparing datasets...")
     'Get and process the train data'
     print("Taking care of the training data...")

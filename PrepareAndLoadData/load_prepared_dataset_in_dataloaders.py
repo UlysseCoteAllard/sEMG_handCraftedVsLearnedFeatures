@@ -1,9 +1,9 @@
 import numpy as np
+from sklearn.decomposition import PCA
 
 import torch
 from torch.utils.data import TensorDataset
 
-import numpy as np
 
 def scramble(examples, labels):
     random_vec = np.arange(len(labels))
@@ -19,7 +19,7 @@ def scramble(examples, labels):
 
 def get_dataloader_for_regression(examples_datasets, feature_calculator, number_of_cycle,
                                   validations_cycles=None, batch_size=128, drop_last=True, shuffle=True,
-                                  electrode_to_use=0):
+                                  electrode_to_use=0, pca=None):
     participants_dataloaders = []
     participants_dataloaders_validation = []
 
@@ -30,14 +30,24 @@ def get_dataloader_for_regression(examples_datasets, feature_calculator, number_
             for example in participant_examples[cycle]:
                 if validations_cycles is None:
                     X.append(example)
-                    Y.append(feature_calculator(example[electrode_to_use]))
+                    feature = feature_calculator(example[electrode_to_use])
+                    Y.append(feature)
                 else:
                     if cycle < validations_cycles:
                         X.append(example)
-                        Y.append(feature_calculator(example[electrode_to_use]))
+                        feature = feature_calculator(example[electrode_to_use])
+                        Y.append(feature)
                     else:
                         X_valid.append(example)
-                        Y_valid.append(feature_calculator(example[electrode_to_use]))
+                        feature = feature_calculator(example[electrode_to_use])
+                        Y_valid.append(feature)
+
+        if hasattr(Y[0], "__len__"):
+            if pca is None:
+                pca = PCA(n_components=1)
+                Y = np.squeeze(pca.fit_transform(Y))
+            else:
+                Y = np.squeeze(pca.transform(Y))
 
         X = np.expand_dims(X, axis=1)
         train = TensorDataset(torch.from_numpy(np.array(X, dtype=np.float32)),
@@ -46,6 +56,8 @@ def get_dataloader_for_regression(examples_datasets, feature_calculator, number_
         participants_dataloaders.append(examplesloader)
 
         if validations_cycles is not None:
+            if pca is not None:
+                Y_valid = np.squeeze(pca.transform(Y_valid))
             X_valid = np.expand_dims(X_valid, axis=1)
             validation = TensorDataset(torch.from_numpy(np.array(X_valid, dtype=np.float32)),
                                        torch.from_numpy(np.array(Y_valid, dtype=np.float32)))
@@ -54,50 +66,68 @@ def get_dataloader_for_regression(examples_datasets, feature_calculator, number_
             participants_dataloaders_validation.append(validationloader)
 
     if validations_cycles is None:
-        return participants_dataloaders
+        return participants_dataloaders, pca
     else:
-        return participants_dataloaders, participants_dataloaders_validation
+        return participants_dataloaders, participants_dataloaders_validation, pca
 
 
 def load_dataloaders_for_regression(path, feature, number_of_cycle=4, batch_size=128, validation_cycle=3,
                                     get_test_set=True, drop_last=True, shuffle=True, electrode_to_use=0):
     participants_dataloaders_test = []
-    'Get testing dataset'
-    if get_test_set:
-        datasets_test = np.load(path + "/RAW_3DC_test.npy")
-        examples_datasets_test, _ = datasets_test
 
-        participants_dataloaders_test = get_dataloader_for_regression(examples_datasets_test,
-                                                                      feature_calculator=feature,
-                                                                      number_of_cycle=number_of_cycle,
-                                                                      validations_cycles=None,
-                                                                      batch_size=batch_size,
-                                                                      drop_last=drop_last, shuffle=False,
-                                                                      electrode_to_use=electrode_to_use)
     'Get training dataset'
     datasets_train = np.load(path + "/RAW_3DC_train.npy")
     examples_datasets_train, _ = datasets_train
     if validation_cycle is None:
-        participants_dataloaders_train = get_dataloader_for_regression(examples_datasets_train,
-                                                                       feature_calculator=feature,
-                                                                       number_of_cycle=number_of_cycle,
-                                                                       validations_cycles=validation_cycle,
-                                                                       batch_size=batch_size, drop_last=drop_last,
-                                                                       shuffle=shuffle,
-                                                                       electrode_to_use=electrode_to_use)
+        participants_dataloaders_train, pca = get_dataloader_for_regression(examples_datasets_train,
+                                                                           feature_calculator=feature,
+                                                                           number_of_cycle=number_of_cycle,
+                                                                           validations_cycles=validation_cycle,
+                                                                           batch_size=batch_size, drop_last=drop_last,
+                                                                           shuffle=shuffle,
+                                                                           electrode_to_use=electrode_to_use)
         if get_test_set:
+            'Get testing dataset'
+            if get_test_set:
+                datasets_test = np.load(path + "/RAW_3DC_test.npy")
+                examples_datasets_test, _ = datasets_test
+
+                participants_dataloaders_test, _ = get_dataloader_for_regression(examples_datasets_test,
+                                                                                 feature_calculator=feature,
+                                                                                 number_of_cycle=number_of_cycle,
+                                                                                 validations_cycles=None,
+                                                                                 batch_size=batch_size,
+                                                                                 drop_last=drop_last, shuffle=False,
+                                                                                 electrode_to_use=electrode_to_use,
+                                                                                 pca=pca)
+
             return participants_dataloaders_train, participants_dataloaders_test
         else:
             return participants_dataloaders_train
     else:
-        participants_dataloaders_train, participants_dataloaders_validation = get_dataloader_for_regression(
+        participants_dataloaders_train, participants_dataloaders_validation, pca = get_dataloader_for_regression(
             examples_datasets_train, feature_calculator=feature, number_of_cycle=number_of_cycle,
             validations_cycles=validation_cycle, batch_size=batch_size, drop_last=drop_last, shuffle=False,
             electrode_to_use=electrode_to_use)
         if get_test_set:
+            'Get testing dataset'
+            if get_test_set:
+                datasets_test = np.load(path + "/RAW_3DC_test.npy")
+                examples_datasets_test, _ = datasets_test
+
+                participants_dataloaders_test, _ = get_dataloader_for_regression(examples_datasets_test,
+                                                                              feature_calculator=feature,
+                                                                              number_of_cycle=number_of_cycle,
+                                                                              validations_cycles=None,
+                                                                              batch_size=batch_size,
+                                                                              drop_last=drop_last, shuffle=False,
+                                                                              electrode_to_use=electrode_to_use,
+                                                                              pca=pca)
+
             return participants_dataloaders_train, participants_dataloaders_validation, participants_dataloaders_test
         else:
             return participants_dataloaders_train, participants_dataloaders_validation
+
 
 def get_dataloader_for_training_no_TL(examples_datasets, labels_datasets, number_of_cycle, validations_cycles=None,
                                       batch_size=128, drop_last=True, shuffle=True):

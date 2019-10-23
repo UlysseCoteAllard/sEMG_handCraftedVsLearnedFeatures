@@ -37,7 +37,7 @@ class Model(nn.Module):
         self._output_regressor = None
         self._layers_to_regress_from = None
         self._size_feature_maps = [126, 101, 76, 51, 26, 1]
-        self._electrode_to_use = None
+        self._channel_to_use = None
 
         print(self)
         print("Number Parameters: ", self.get_n_params())
@@ -61,7 +61,7 @@ class Model(nn.Module):
         for i, block in enumerate(self._features_extractor):
             for _, layer in enumerate(block):
                 x = layer(x)
-                if isinstance(layer, nn.BatchNorm2d):
+                if isinstance(layer, nn.LeakyReLU):
                     features_calculated['layer_' + str(i)] = torch.mean(x, dim=(3)).detach().cpu().numpy()
         # Perform the average pooling channel wise (i.e. for each channel of the armband), take the average output of
         # the features
@@ -93,13 +93,13 @@ class Model(nn.Module):
         for i, block in enumerate(self._features_extractor):
             for j, layer in enumerate(block):
                 x = layer(x)
-                if isinstance(layer, nn.BatchNorm2d) and i == self._layers_to_regress_from:
+                if isinstance(layer, nn.LeakyReLU) and i == self._layers_to_regress_from:
                     return x
         return x
 
     def regressor_forward(self, x):
         # Only keep the electrode that is being regressed on
-        x = x.narrow(2, self._electrode_to_use, self._electrode_to_use+1)
+        x = x.narrow(2, self._channel_to_use, self._channel_to_use + 1)
 
         x = self.regressor_feature_extraction_forward(x)
         flatten_x = x.reshape(-1, self._number_of_features_output *
@@ -107,12 +107,12 @@ class Model(nn.Module):
         output_regressor = self._output_regressor(flatten_x)
         return output_regressor
 
-    def transform_to_regressor(self, layer_to_regress_from, freeze_features_extraction=True, electrode_to_use=0):
+    def transform_to_regressor(self, layer_to_regress_from, freeze_features_extraction=True, channel_to_use=0):
         assert 0 <= layer_to_regress_from <= self._number_of_blocks
 
         self._layers_to_regress_from = layer_to_regress_from
         self._size_feature_maps = [126, 101, 76, 51, 26, 1]
-        self._electrode_to_use = electrode_to_use
+        self._channel_to_use = channel_to_use
         if freeze_features_extraction:
             # Remove the possibility of changing the weights of the network
             for param in self.parameters():

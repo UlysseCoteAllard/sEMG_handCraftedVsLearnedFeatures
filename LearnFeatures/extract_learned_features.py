@@ -8,9 +8,15 @@ from PrepareAndLoadData.load_prepared_dataset_in_dataloaders import load_dataloa
 
 def extract_learned_features_average(path_dataset='../Dataset/processed_dataset',
                                      path_weights='../weights/TL_best_weights.pt',
-                                     path_bn_statistics="../weights/bn_statistics.pt"):
-    participants_dataloaders_train = load_dataloaders(path_dataset, batch_size=512, validation_cycle=None,
-                                                      get_test_set=False, drop_last=False, shuffle=False)
+                                     path_bn_statistics="../weights/bn_statistics.pt",
+                                     get_test_dataset=False):
+
+    if get_test_dataset:
+        _, participants_dataloaders = load_dataloaders(path_dataset, batch_size=512, validation_cycle=None,
+                                                       get_test_set=get_test_dataset, drop_last=False, shuffle=False)
+    else:
+        participants_dataloaders = load_dataloaders(path_dataset, batch_size=512, validation_cycle=None,
+                                                          get_test_set=False, drop_last=False, shuffle=False)
     # Define Model
     model = Model(number_of_class=11, number_of_blocks=6, dropout_rate=0.35).cuda()
     best_weights = torch.load(path_weights)
@@ -27,7 +33,7 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
         features_learned_per_layers['layer_' + str(i)] = []
 
     with torch.no_grad():
-        for dataset_index, dataset in enumerate(participants_dataloaders_train):
+        for dataset_index, dataset in enumerate(participants_dataloaders):
             BN_weights = list_dictionaries_bn_weights[dataset_index]
             model.load_state_dict(BN_weights, strict=False)
             model.eval()
@@ -66,10 +72,22 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
 
     'Save the list of dataframes'
     for i, dataframe in enumerate(dataframes_grouped_by_layers):
-        dataframe.to_csv(path_or_buf="../LearnFeatures/features/learned_features_layer_" + str(i) + ".csv")
+        if get_test_dataset:
+            dataframe.to_csv(path_or_buf="../LearnFeatures/features/learned_features_layer_" + str(i) +
+                                         "_TEST_dataset.csv")
+        else:
+            dataframe.to_csv(path_or_buf="../LearnFeatures/features/learned_features_layer_" + str(i) + ".csv")
 
 
 if __name__ == "__main__":
+    '''
     extract_learned_features_average(path_dataset='../Dataset/processed_dataset',
                                      path_weights='../weights/TL_best_weights.pt',
-                                     path_bn_statistics="../weights/bn_statistics.pt")
+                                     path_bn_statistics="../weights/bn_statistics.pt",
+                                     get_test_dataset=False)
+    '''
+
+    extract_learned_features_average(path_dataset='../Dataset/processed_dataset',
+                                     path_weights='../weights/TL_best_weights.pt',
+                                     path_bn_statistics="../weights/bn_statistics.pt",
+                                     get_test_dataset=True)
