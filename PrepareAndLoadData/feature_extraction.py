@@ -296,7 +296,6 @@ def getSampEn(vector,m=2, r_multiply_by_sigma=.2):
     vector = np.asarray(vector)
     r = r_multiply_by_sigma * np.std(vector)
     results = sampen.sampen2(data=vector.tolist(), mm=m, r=r)
-    print(results)
     results_SampEN = []
     for x in np.array(results)[:, 1]:
         if x is not None:

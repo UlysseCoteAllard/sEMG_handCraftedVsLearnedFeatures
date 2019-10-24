@@ -32,7 +32,9 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
     for i in range(model.get_number_of_blocks()):
         features_learned_per_layers['layer_' + str(i)] = []
 
+    labels_across_all_participants = []
     with torch.no_grad():
+
         for dataset_index, dataset in enumerate(participants_dataloaders):
             BN_weights = list_dictionaries_bn_weights[dataset_index]
             model.load_state_dict(BN_weights, strict=False)
@@ -48,6 +50,14 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
                     features_participant[key].extend(features_batch[key])
             for key in features_participant:
                 features_learned_per_layers[key].append(features_participant[key])
+
+        for dataset_index, dataset in enumerate(participants_dataloaders):
+            labels_participant = []
+            for data in dataset:
+                _, labels = data
+                labels_participant.extend(labels.cpu().numpy())
+            labels_across_all_participants.append(labels_participant)
+
 
     for key_layer in features_learned_per_layers:
         for participant in features_learned_per_layers[key_layer]:
@@ -70,6 +80,7 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
         dataframes_grouped_by_layers.append(df)
         print(df)
 
+
     'Save the list of dataframes'
     for i, dataframe in enumerate(dataframes_grouped_by_layers):
         if get_test_dataset:
@@ -78,14 +89,29 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
         else:
             dataframe.to_csv(path_or_buf="../LearnFeatures/features/learned_features_layer_" + str(i) + ".csv")
 
+    participant_index_for_labels = []
+    labels_from_all_participants = []
+    for participant_index, labels_participant in enumerate(labels_across_all_participants):
+        labels_from_all_participants.extend(labels_participant)
+        participant_index_for_labels.extend(np.ones(len(labels_participant))*participant_index)
+    data = {'Participant': participant_index_for_labels,
+            'labels': labels_from_all_participants}
+    df = pd.DataFrame(data)
+
+    if get_test_dataset:
+        df.to_csv(path_or_buf="../LearnFeatures/features/labels_for_learned_features_TEST.csv")
+    else:
+        df.to_csv(path_or_buf="../LearnFeatures/features/labels_for_learned_features.csv")
+
+
 
 if __name__ == "__main__":
-    '''
+
     extract_learned_features_average(path_dataset='../Dataset/processed_dataset',
                                      path_weights='../weights/TL_best_weights.pt',
                                      path_bn_statistics="../weights/bn_statistics.pt",
                                      get_test_dataset=False)
-    '''
+
 
     extract_learned_features_average(path_dataset='../Dataset/processed_dataset',
                                      path_weights='../weights/TL_best_weights.pt',

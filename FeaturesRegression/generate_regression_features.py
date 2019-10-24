@@ -116,12 +116,12 @@ if __name__ == "__main__":
                 feature_extraction.getMFL, feature_extraction.getSampEn, feature_extraction.getBC,
                 feature_extraction.getSKEW, feature_extraction.getKURT, feature_extraction.getHIST]
 
-
+    
     for feature in features:
         get_regressor_and_test_it(feature=feature, path_dataset='../Dataset/processed_dataset',
                                   path_weights='../weights/TL_best_weights.pt',
                                   path_bn_statistics="../weights/bn_statistics.pt",
-                                  number_of_repetitions=1)
+                                  number_of_repetitions=20)
 
     colors = ["#B85450", "#82B366", "#6C8EBF", "#647687"]
     colors = np.repeat(colors, 4)
