@@ -48,7 +48,8 @@ def test_network_raw_convNet(path_dataset = '../Dataset/processed_dataset',
                              filter_size=(1,26)):
     with open("results/test_accuracy_filter_size_" + str(filter_size[1]) + ".txt", "a") as myfile:
         myfile.write("Test")
-    _, _, participants_dataloaders_test = load_dataloaders(path_dataset, batch_size=512, get_test_set=True)
+    _, participants_dataloaders_test = load_dataloaders(path_dataset, batch_size=512, get_test_set=True,
+                                                        validation_cycle=None)
 
     model = Model(number_of_class=11, number_of_blocks=6, dropout_rate=.35, filter_size=filter_size).cuda()
     best_weights = torch.load(path_weights)
@@ -96,11 +97,11 @@ if __name__ == "__main__":
 
     classes = ["Neutral", "Radial Deviation", "Wrist Flexion", "Ulnar Deviation", "Wrist Extension", "Supination",
                "Pronation", "Power Grip", "Open Hand", "Chuck Grip", "Pinch Grip"]
-    font_size = 24
+    font_size = 36
     sns.set(style='dark')
 
     fig, axs = print_confusion_matrix(ground_truth=ground_truth, predictions=predictions,
-                                      class_names=classes, title="ConvNet using AdaDANN training", fontsize=font_size)
+                                      class_names=classes, title="ConvNet using ADANN training", fontsize=font_size)
 
     #fig.suptitle("ConvNet using AdaDANN training", fontsize=28)
     mng = plt.get_current_fig_manager()

@@ -83,7 +83,7 @@ if __name__ == "__main__":
     np.save("../Dataset/processed_dataset/FEATURES_test",test_features)
     np.save("../Dataset/processed_dataset/CLASS_test",test_class)
 
-    # Save test features
+    # Save test features_data
     # Save test class
 
 

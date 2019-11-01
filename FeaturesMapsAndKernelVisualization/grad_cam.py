@@ -17,7 +17,7 @@ from FeaturesMapsAndKernelVisualization.misc_functions import get_example_params
 
 class CamExtractor():
     """
-        Extracts cam features from the model
+        Extracts cam features_data from the model
     """
     def __init__(self, model, target_layer):
         self.model = model

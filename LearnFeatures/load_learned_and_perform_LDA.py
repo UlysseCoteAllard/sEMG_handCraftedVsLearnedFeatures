@@ -8,10 +8,11 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 import time
+import matplotlib.colors as colors
 
 
 def load_learned_features(layer):
-    layer_contents = pd.read_csv("./features/learned_features_layer_" + layer +".csv")
+    layer_contents = pd.read_csv("./features_data/learned_features_layer_" + layer + ".csv")
     # All the info is in string format -> convert back to floats
     learned_features_string = layer_contents.LearnFeatures.values
     learned_features_list = [[]]
@@ -29,79 +30,30 @@ def load_learned_features(layer):
     return np.array(learned_features_list)
 
 
-def perform_LDA(test_features, training_features, test_labels, training_labels, layer):
-    classes = ["Neutral", "Radial Deviation", "Wrist Flexion", "Ulnar Deviation", "Wrist Extension", "Supination",
-               "Pronation", "Power Grip", "Open Hand", "Chuck Grip", "Pinch Grip"]
+def perform_LDA(test_features, training_features, test_labels, training_labels, layer, classes):
 
     lda = LinearDiscriminantAnalysis()
     lda.fit(training_features, training_labels)
     predictions = lda.predict(test_features)
 
-    plot_confusion_matrix(test_labels, predictions, classes, normalize=True,
-                          title="Layer_" + str(layer) + "_All_Features")
+    return predictions
 
 
-def perform_LDA_single_feature(test_features, training_features, test_labels, training_labels, layer):
-    classes = ["Neutral", "Radial Deviation", "Wrist Flexion", "Ulnar Deviation", "Wrist Extension", "Supination",
-               "Pronation", "Power Grip", "Open Hand", "Chuck Grip", "Pinch Grip"]
-    '''
-    print(np.shape(training_features))
-    labels_one_against_all_array = range(11)
-    for labels_one_against_all in labels_one_against_all_array:
-        test_labels_one_against_all = []
-        training_labels_one_against_all = []
-        for label in test_labels:
-            if label == labels_one_against_all:
-                test_labels_one_against_all.append(0)
-            else:
-                test_labels_one_against_all.append(1)
-        for label in training_labels:
-            if label == labels_one_against_all:
-                training_labels_one_against_all.append(0)
-            else:
-                training_labels_one_against_all.append(1)
-
-        # Get all the index for class 0
-        indexes_class_zero = np.argwhere(np.array(training_labels_one_against_all) == 0).flatten()
-        number_of_class_one_to_get = len(indexes_class_zero)
-        indexes_class_one = np.random.choice(np.argwhere(np.array(training_labels_one_against_all)).flatten(),
-                                             number_of_class_one_to_get)
-        indexes_all = []
-        indexes_all.extend(np.array(indexes_class_zero).tolist())
-        indexes_all.extend(np.array(indexes_class_one).tolist())
-        labels_balanced_train = np.array(training_labels_one_against_all)[indexes_all]
-        examples_balanced_train = np.array(training_features)[indexes_all]
-
-        #for feature in range(int(test_features.shape[1]/10)):
-        for feature in range(1):
-            #examples_train = examples_balanced_train[:, feature * 10:(feature+1) * 10]
-            examples_train = examples_balanced_train
-            examples_train, labels_train = shuffle(examples_train, labels_balanced_train)
-            #examples_test = test_features[:, feature * 10:(feature+1) * 10]
-            examples_test = test_features
-            examples_test, labels_test = shuffle(examples_test, test_labels_one_against_all)
-            lda = LinearDiscriminantAnalysis()
-            lda.fit(examples_train, labels_train)
-            predictions = lda.predict(examples_test)
-
-            plot_confusion_matrix(labels_test, predictions, [classes[labels_one_against_all], "Others"],
-                                  normalize=True,
-                                  title=classes[labels_one_against_all] + "_Layer_" + str(layer) + "_F_" + str(feature))
-            if feature > 0:
-                break
-        print(training_labels_one_against_all)
-    '''
-    #accuracy = np.zeros(int(teF.shape[1]/10))
+def perform_LDA_single_feature(test_features, training_features, test_labels, training_labels, layer, classes):
+    features_predictions = []
     for feature in range(int(test_features.shape[1] / 10)):
         examples_train = training_features[:, feature * 10:(feature + 1) * 10]
-        examples_train_shuffled, labels_train_shuffled = shuffle(examples_train, training_labels)
         examples_test = test_features[:, feature * 10:(feature + 1) * 10]
-        examples_test_shuffled, labels_test_shuffled = shuffle(examples_test, test_labels)
         clf = LinearDiscriminantAnalysis()
-        predictions = np.array(clf.fit(examples_train_shuffled, labels_train_shuffled).predict(examples_test_shuffled))
-        plot_confusion_matrix(labels_test_shuffled, predictions, classes,
-                              normalize=True,
-                              title="Layer_" + str(layer) + "_F_" + str(feature))
+        predictions = np.array(clf.fit(examples_train, training_labels).predict(examples_test))
+        features_predictions.append(predictions)
+    return features_predictions
+
+def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+    new_cmap = colors.LinearSegmentedColormap.from_list(
+        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+        cmap(np.linspace(minval, maxval, n)))
+    return new_cmap
 
 def plot_confusion_matrix(ground_truth, predictions, class_names,
                           normalize=False, title=None, fontsize=24):
@@ -118,7 +70,6 @@ def plot_confusion_matrix(ground_truth, predictions, class_names,
 
     confusion_matrix_calculated = confusion_matrix(np.ravel(np.array(ground_truth)),
                                                             np.ravel(np.array(predictions)))
-
     if normalize:
         confusion_matrix_calculated = confusion_matrix_calculated.astype('float') / \
                                       confusion_matrix_calculated.sum(axis=1)[:, np.newaxis]
@@ -130,24 +81,34 @@ def plot_confusion_matrix(ground_truth, predictions, class_names,
     df_cm = pd.DataFrame(
         confusion_matrix_calculated, index=class_names, columns=class_names,
     )
+    print(confusion_matrix_calculated)
+    max_confusion_matrix = np.max(confusion_matrix_calculated)
+    min_confusion_matrix = np.min(confusion_matrix_calculated)
+    cmap = plt.get_cmap("magma")
+    new_cmap = truncate_colormap(cmap, min_confusion_matrix, max_confusion_matrix)
+    print(max_confusion_matrix, "  ", min_confusion_matrix)
 
     plt.figure(figsize=(14, 12))  # Sample figsize in inches
     try:
-        heatmap = sns.heatmap(df_cm, annot=True, fmt=fmt, cbar=False, annot_kws={"size": 28})
+        heatmap = sns.heatmap(df_cm, annot=False, fmt=fmt, cbar=False, annot_kws={"size": 28}, cmap=new_cmap)
     except ValueError:
         raise ValueError("Confusion matrix values must be integers.")
-    heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(), fontsize=fontsize)
+    #heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(), fontsize=fontsize)
     heatmap.set(
         # ... and label them with the respective list entries
-        title="Accuracy: " + str(accuracy_score(ground_truth, predictions)),
-        ylabel='True label',
-        xlabel='Predicted label')
-    heatmap.xaxis.set_ticklabels(heatmap.xaxis.get_ticklabels(), rotation=30, ha='right', fontsize=fontsize)
+        #title="Accuracy: " + str(accuracy_score(ground_truth, predictions)),
+        #ylabel='True label',
+        #xlabel='Predicted label'
+    )
+
+    #heatmap.xaxis.set_ticklabels(heatmap.xaxis.get_ticklabels(), rotation=30, ha='right', fontsize=fontsize)
+    heatmap.xaxis.set_ticklabels([], rotation=30, ha='right', fontsize=fontsize)
+    heatmap.yaxis.set_ticklabels([], fontsize=fontsize)
+    '''
     heatmap.xaxis.label.set_size(fontsize + 4)
     heatmap.yaxis.label.set_size(fontsize + 4)
     heatmap.title.set_size(fontsize + 6)
-
-
+    '''
     plt.tight_layout()
     plt.gcf().subplots_adjust(bottom=0.25)
     plt.gcf().subplots_adjust(top=0.90)
@@ -157,35 +118,107 @@ def plot_confusion_matrix(ground_truth, predictions, class_names,
     plt.clf()
     plt.close()
 
+def handle_handcrafted_features(classes, path="./features_data/handcrafted_predictions.csv"):
+    data = pd.read_csv(path)
+
+    features_by_category = [["AFB_", "DAMV_", "DASDV_", "DLD_", "DTM_", "DVARV_", "DV_", "IEMG_", "LD_", "M2_",
+                             "MMAV1_", "MMAV2_", "MAV_", "MAX_", "MHW_", "MNP_", "MTW_", "RMS_", "SM_", "SSI_", "TM_",
+                             "TTP_", "VAR_", "V_", "WL_"],
+                            ["FR_", "MDF_", "MNF_", "SSC_", "ZC_"],
+                            ["SAMPEN_", "APEN_", "WAMP_", "BC_", "KATZ_", "MFL_"],
+                            ["AR_", "CC_", "DAR_", "DCC_", "DFA_", "PSR_", "SNR_"],
+                            ["CE_", "DPR_", "HIST_", "KURT_", "MAVS_", "OHM_", "PKF_", "PSDFD_", "SKEW_", "SMR_",
+                             "TSPSD_", "CVF_", "VFD_"],
+                            ["UNIQUE"]]
+
+    category = ["SAP", "FI", "NLC", "TSM", "UNI", "UNIQUE"]
+    accuracies_handcrafted = {"SAP": [], "FI": [], "NLC": [], "TSM": [], "UNI": [], "UNIQUE": []}
+    true_labels = []
+    for i, column_name in enumerate(data):
+        if i == 0:
+            true_labels = data[column_name]
+        else:
+            plot_confusion_matrix(data[column_name], true_labels, classes, normalize=True,
+                                  title="Handcrafted_" + str(column_name))
+            category_for_accuracy = 0
+            for j, features_category in enumerate(features_by_category):
+                found = False
+                for feature in features_category:
+                    if feature in column_name:
+                        category_for_accuracy = j
+                        found = True
+                        break
+                if found:
+                    break
+
+            accuracies_handcrafted[category[category_for_accuracy]].append(accuracy_score(true_labels,
+                                                                                          data[column_name]))
+    print(accuracies_handcrafted)
+    for category in accuracies_handcrafted:
+        print(len(accuracies_handcrafted[category]))
+        print(np.mean(accuracies_handcrafted[category]))
+        print(np.std(accuracies_handcrafted[category]))
+    #print(np.mean(accuracies_handcrafted))
+
 
 if __name__ == '__main__':
-    sns.set()
+    classes = ["Neutral", "Radial Deviation", "Wrist Flexion", "Ulnar Deviation", "Wrist Extension", "Supination",
+               "Pronation", "Power Grip", "Open Hand", "Chuck Grip", "Pinch Grip"]
+
+    sns.set(font_scale=3.5)
     np.set_printoptions(precision=1)
+
+    #handle_handcrafted_features(classes=classes)
+
     import os
     print(os.listdir("./"))
-    test_labels = np.genfromtxt('./features/labels_for_learned_features_TEST.csv', delimiter=',')
+    test_labels = np.genfromtxt('./features_data/labels_for_learned_features_TEST.csv', delimiter=',')
     test_labels = np.array(test_labels[1:, 2]).astype(int)
-    train_labels = np.genfromtxt('./features/labels_for_learned_features.csv', delimiter=',')
+    train_labels = np.genfromtxt('./features_data/labels_for_learned_features.csv', delimiter=',')
     train_labels = np.asarray(train_labels[1:, 2]).astype(int)
+
+    layers_predictions_single_features = []
+    layers_predictions_all_features = []
 
     for layer in range(6):
 
         test_features = load_learned_features(str(layer) + "_TEST_dataset")
+        print(np.shape(test_features))
         train_features = load_learned_features(str(layer))
 
-        perform_LDA_single_feature(test_features, train_features, test_labels, train_labels, layer)
-        perform_LDA(test_features, train_features, test_labels, train_labels, layer)
-        #np.savetxt("learned_accuracy" + str(layer) + "conf.csv",accuracy,delimiter=',')
+        #layers_predictions_single_features.append(perform_LDA_single_feature(test_features, train_features, test_labels,
+        #                                                                     train_labels, layer, classes))
+        layers_predictions_all_features.append(perform_LDA(test_features, train_features, test_labels, train_labels,
+                                                           layer, classes))
+        for predictions in layers_predictions_all_features:
+            print(accuracy_score(test_labels, predictions))
+    print(layers_predictions_all_features)
+    np.save("./lda_predictions/single_features_predictions.npy", layers_predictions_single_features)
+    np.save("./lda_predictions/all_features_predictions.npy", layers_predictions_all_features)
+    '''
+    layers_predictions_single_features = np.load("./lda_predictions/single_features_predictions.npy")
+    layers_predictions_all_features = np.load("./lda_predictions/all_features_predictions.npy")
+    
+    for block in range(6):
+        for feature in range(64):
+            predictions = layers_predictions_single_features[block][feature]
+            plot_confusion_matrix(test_labels, predictions, classes, normalize=True,
+                                  title="Block_" + str(block) + "_Features_" + str(feature))
+    for block in range(6):
+        predictions = layers_predictions_all_features[block]
+        plot_confusion_matrix(test_labels, predictions, classes, normalize=True,
+                              title="Block_" + str(block) + "_All_Features")
+     
+    accuracies_single_feature = []
+    for block in range(6):
+        for feature in range(64):
+            predictions = layers_predictions_single_features[block][feature]
+            accuracies_single_feature.append(accuracy_score(test_labels, predictions))
+        print("Accuracy single features_data, BLOCK: ", str(block), " is: ", np.mean(accuracies_single_feature), " STD is: ",
+              np.std(accuracies_single_feature))
 
-        #for cm in range(11): #cm:class mask
-
-        #    test_labels_mask = test_labels == cm
-        #    test_labels_mask = test_labels_mask.astype(int)
-        #    train_labels_mask = train_labels == cm
-        #    train_labels_mask = train_labels_mask.astype(int)
-        #    accuracy = perform_LDA(test_features,train_features,test_labels_mask, train_labels_mask)
-        #    np.savetxt("learned_accuracy" + str(layer) + "_" + str(cm) + '.csv',
-        #               accuracy,
-        #               delimiter=',')
-
-
+    for block in range(6):
+        accuracies_all_features = []
+        predictions = layers_predictions_all_features[block]
+        print("Accuracy all features_data, BLOCK: ", str(block), " is: ", accuracy_score(test_labels, predictions))
+    '''

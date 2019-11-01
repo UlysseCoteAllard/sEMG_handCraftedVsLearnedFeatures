@@ -56,7 +56,6 @@ class Model(nn.Module):
 
         if use_forward_visualization:
             return self.forward_visualization(x)
-
         features_calculated = {}
         for i, block in enumerate(self._features_extractor):
             for _, layer in enumerate(block):
@@ -64,7 +63,7 @@ class Model(nn.Module):
                 if isinstance(layer, nn.LeakyReLU):
                     features_calculated['layer_' + str(i)] = torch.mean(x, dim=(3)).detach().cpu().numpy()
         # Perform the average pooling channel wise (i.e. for each channel of the armband), take the average output of
-        # the features
+        # the features_data
         #features_extracted = F.adaptive_avg_pool2d(x, (self._number_of_channel_input, 1)).view(
         #    -1, self._number_of_channel_input * self._number_of_features_output)
         features_extracted = x.view(-1, self._number_of_channel_input * self._number_of_features_output)

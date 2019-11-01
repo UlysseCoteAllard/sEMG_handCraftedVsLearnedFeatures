@@ -41,8 +41,8 @@ def load_handcrafted_features(loc):
 
 def load_learned_features(layer):
     # Objectives:
-    # 1: Load in learned features and prepare for analysis
-    # 2: Label learned features with generic names
+    # 1: Load in learned features_data and prepare for analysis
+    # 2: Label learned features_data with generic names
 
     #1:
     layer_contents = pd.read_csv("../Dataset/processed_dataset/learned_features_layer_" + str(layer) + ".csv")
@@ -65,7 +65,7 @@ def load_learned_features(layer):
     del learned_features_list[-1]
     learned_features = np.array(learned_features_list)
 
-    # 2: zscore of deep features
+    # 2: zscore of deep features_data
 
     new_arr = np.zeros((learned_features.shape[0], len(learned_features_list[0])))
     for i in range(new_arr.shape[0]):
@@ -83,7 +83,7 @@ def load_learned_features(layer):
 
 def gather_features():
 
-    # SECTION: Load learned features
+    # SECTION: Load learned features_data
     print("Loading Learned Features")
 
     # Takes takes about 18 minutes to load and prepare all data
@@ -166,7 +166,7 @@ if __name__ == "__main__":
     #Use PCA
     pca = PCA(n_components=800)
     pca.fit_transform(feature_arr)
-    # Determine amount of PCs needed for 95% variance of learned features
+    # Determine amount of PCs needed for 95% variance of learned features_data
     num_pc = 0
     for p in range(pca.explained_variance_ratio_.shape[0]):
         if np.sum(pca.explained_variance_ratio_[:p]) >= 0.99:

@@ -14,22 +14,22 @@ def extract_features(vector):
 
         #plt.plot(np.asarray(vector[c]))
         #plt.show()
-    #    features.append(getApEn(vector[c]))
+    #    features_data.append(getApEn(vector[c]))
         features.extend(getAR(vector[c], 4))
         features.extend(getCC(vector[c], 4))
         features.append(getDASDV(vector[c]))
-    #    features.append(getFuzzyEn(vector))
+    #    features_data.append(getFuzzyEn(vector))
         features.extend(getHIST(vector, 3))
 
-    #    features.append(getHOMYOP(vector))
-    #    features.append(getHOSSC(vector))
-    #    features.append(getHOWAMP(vector))
-    #    features.append(getHOZC(vector))
+    #    features_data.append(getHOMYOP(vector))
+    #    features_data.append(getHOSSC(vector))
+    #    features_data.append(getHOWAMP(vector))
+    #    features_data.append(getHOZC(vector))
 
         features.append(getIEMG(vector[c]))
         features.extend(getIQR(vector[c]))
         features.append(getLD(vector[c]))
-    #    features.append(getLS(vector)) # LOOKUP LMOM function to implement this <--
+    #    features_data.append(getLS(vector)) # LOOKUP LMOM function to implement this <--
         features.extend(getMAVFD(vector[c]))
         features.append(getMAVFDn(vector[c]))
         features.append(getMAV(vector[c]))
@@ -46,7 +46,7 @@ def extract_features(vector):
         features.append(getMYOP(vector[c],1))
         features.append(getRANGE(vector[c]))
         features.append(getRMS(vector[c]))
-        #features.append(getSampEn(vector[c]))
+        #features_data.append(getSampEn(vector[c]))
         features.append(getSKEW(vector[c]))
         features.append(getSM(vector[c],2,1000))
         features.append(getSSC(vector[c], 0.01))

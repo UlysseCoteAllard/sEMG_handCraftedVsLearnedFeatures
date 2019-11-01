@@ -23,8 +23,8 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
     model.load_state_dict(best_weights)
     list_dictionaries_bn_weights = torch.load(path_bn_statistics)
 
-    'Generate the features from the training dataset and'
-    'Format the features in a dictionary in the shape: Layers x Participant x Examples. with Layers being the keys of'
+    'Generate the features_data from the training dataset and'
+    'Format the features_data in a dictionary in the shape: Layers x Participant x Examples. with Layers being the keys of'
     'the dictionary'
 
     print(model.get_number_of_blocks())
@@ -84,10 +84,10 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
     'Save the list of dataframes'
     for i, dataframe in enumerate(dataframes_grouped_by_layers):
         if get_test_dataset:
-            dataframe.to_csv(path_or_buf="../LearnFeatures/features/learned_features_layer_" + str(i) +
+            dataframe.to_csv(path_or_buf="../LearnFeatures/features_data/learned_features_layer_" + str(i) +
                                          "_TEST_dataset.csv")
         else:
-            dataframe.to_csv(path_or_buf="../LearnFeatures/features/learned_features_layer_" + str(i) + ".csv")
+            dataframe.to_csv(path_or_buf="../LearnFeatures/features_data/learned_features_layer_" + str(i) + ".csv")
 
     participant_index_for_labels = []
     labels_from_all_participants = []
@@ -99,9 +99,9 @@ def extract_learned_features_average(path_dataset='../Dataset/processed_dataset'
     df = pd.DataFrame(data)
 
     if get_test_dataset:
-        df.to_csv(path_or_buf="../LearnFeatures/features/labels_for_learned_features_TEST.csv")
+        df.to_csv(path_or_buf="../LearnFeatures/features_data/labels_for_learned_features_TEST.csv")
     else:
-        df.to_csv(path_or_buf="../LearnFeatures/features/labels_for_learned_features.csv")
+        df.to_csv(path_or_buf="../LearnFeatures/features_data/labels_for_learned_features.csv")
 
 
 

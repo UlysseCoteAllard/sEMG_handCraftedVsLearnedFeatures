@@ -77,10 +77,10 @@ def get_regressor_and_test_it(feature, path_dataset='../Dataset/processed_datase
 
 def generate_regression_graph(data, feature, colors):
     font = {'family': 'normal',
-            'size': 32}
+            'size': 64}
 
     matplotlib.rc('font', **font)
-    sns.set(font_scale=2)
+    sns.set(font_scale=2, rc={'figure.figsize': (10, 3), "lines.linewidth":3.})
     sns.set_palette(sns.color_palette([colors]))
     sns.set_style("whitegrid")
 
@@ -101,7 +101,7 @@ def generate_regression_graph(data, feature, colors):
                        "Mean Square Error": mseloss})
     print(df)
 
-    sns.catplot("Block", "Mean Square Error", data=df, kind="point")
+    sns.catplot("Block", "Mean Square Error", data=df, kind="point", height=5, aspect=8/5, label='big')
     plt.title(feature.__name__[3:])
     plt.tight_layout()
     plt.rcParams['figure.facecolor'] = 'white'
@@ -116,15 +116,15 @@ if __name__ == "__main__":
                 feature_extraction.getMFL, feature_extraction.getSampEn, feature_extraction.getBC,
                 feature_extraction.getSKEW, feature_extraction.getKURT, feature_extraction.getHIST]
 
-    
-    for feature in features:
+    '''
+    for feature in features_data:
         get_regressor_and_test_it(feature=feature, path_dataset='../Dataset/processed_dataset',
                                   path_weights='../weights/TL_best_weights.pt',
                                   path_bn_statistics="../weights/bn_statistics.pt",
                                   number_of_repetitions=20)
-
-    colors = ["#B85450", "#82B366", "#6C8EBF", "#647687"]
-    colors = np.repeat(colors, 4)
+    '''
+    colors = ["#B85450", "#9673A6", "#10739E", "#3B8276", "#004DB3"]
+    colors = np.repeat(colors, 3)
     print(colors)
     for i, feature in enumerate(features):
         data = np.load("ResultsRegression/data_for_feature_" + feature.__name__ + ".npy")
