@@ -1,1 +1,2 @@
 # sEMG_handCraftedVsLearnedFeatures
+WIP
