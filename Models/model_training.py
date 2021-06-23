@@ -318,37 +318,37 @@ def pre_train_model(model, cross_entropy_loss_for_class, cross_entropy_loss_for_
                         accuracy_source_domain/n_total, accuracy_target_domain/n_total, loss_domain_sum/n_total))
 
         'Validation step'
-        if epoch % 1 == 0:
-            with torch.no_grad():
-                prediction_accuracy = 0.
-                validation_loss, n_total = 0, 0
-                for dataset_index, dataset in enumerate(dataloaders['val']):
-                    BN_weights = list_dictionaries_BN_weights[dataset_index]
-                    model.load_state_dict(BN_weights, strict=False)
-                    model.eval()
-                    for i, data in enumerate(dataset):
-                        inputs, labels = data
-                        inputs, labels = inputs.cuda(), labels.cuda()
-                        outputs, _ = model(inputs)
-                        _, predictions = torch.max(outputs, 1)
-                        prediction_accuracy += torch.sum(predictions ==
-                                                         labels).item()/labels.size(0)
-                        validation_loss += cross_entropy_loss_for_class(outputs, labels)
-                        n_total += 1
+ 
+        with torch.no_grad():
+            prediction_accuracy = 0.
+            validation_loss, n_total = 0, 0
+            for dataset_index, dataset in enumerate(dataloaders['val']):
+                BN_weights = list_dictionaries_BN_weights[dataset_index]
+                model.load_state_dict(BN_weights, strict=False)
+                model.eval()
+                for i, data in enumerate(dataset):
+                    inputs, labels = data
+                    inputs, labels = inputs.cuda(), labels.cuda()
+                    outputs, _ = model(inputs)
+                    _, predictions = torch.max(outputs, 1)
+                    prediction_accuracy += torch.sum(predictions ==
+                                                     labels).item()/labels.size(0)
+                    validation_loss += cross_entropy_loss_for_class(outputs, labels)
+                    n_total += 1
 
-                print("\nValidation Accuracy: {:.5f}, Loss Accuracy {:.5f}\n".format(
-                    prediction_accuracy/n_total, validation_loss.item()/n_total
-                ))
-                epoch_validation_loss = validation_loss.item()/n_total
+            print("\nValidation Accuracy: {:.5f}, Loss Accuracy {:.5f}\n".format(
+                prediction_accuracy/n_total, validation_loss.item()/n_total
+            ))
+            epoch_validation_loss = validation_loss.item()/n_total
 
-                # deep copy the model
-                scheduler.step(epoch_validation_loss)
-                if epoch_validation_loss + precision < best_loss:
-                    print("New best validation loss:", epoch_validation_loss)
-                    best_loss = epoch_validation_loss
-                    best_weights = copy.deepcopy(model.state_dict())
-                    best_bn_statistics = copy.deepcopy(list_dictionaries_BN_weights)
-                    patience = patience_increase + epoch
+            # deep copy the model
+            scheduler.step(epoch_validation_loss)
+            if epoch_validation_loss + precision < best_loss:
+                print("New best validation loss:", epoch_validation_loss)
+                best_loss = epoch_validation_loss
+                best_weights = copy.deepcopy(model.state_dict())
+                best_bn_statistics = copy.deepcopy(list_dictionaries_BN_weights)
+                patience = patience_increase + epoch
 
         print("Epoch {} of {} took {:.3f}s".format(
             epoch + 1, num_epochs, time.time() - epoch_start))
